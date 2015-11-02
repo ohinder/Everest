@@ -1,3 +1,5 @@
+export test_problem
+
 #
 # test the linear program solver on a simple problem
 #

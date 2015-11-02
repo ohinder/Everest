@@ -1,12 +1,14 @@
 using Everest
 
+include("../src/loadcode.jl");
 test_problem("BORE3D")
 
 
 
+
+
 ##############################################################
-
-
+##############################################################
 
 
 function test(R::SparseMatrixCSC{Float64,Int64},v::Array{Float64,1})
