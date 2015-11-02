@@ -12,7 +12,10 @@ using Ipopt, KNITRO
 
 function test_problem(name::String)
 	file_name = name * ".mat";
-	A, b, c = get_netlib_problem("/home/oliver/Documents/Programming_Projects/fast_julia/src/benchmarking/Problems", file_name);
+
+  dir = dirname(@__FILE__) * "/Problems/"
+	println(dir)
+  A, b, c = get_netlib_problem(dir, file_name);
 	#Q = -speye(length(c));
 	Q = tridiagonal(length(c),0.0,1.0);
 	#Q = spzeros(length(c),length(c));

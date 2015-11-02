@@ -73,10 +73,9 @@ function update_newton!(newt::class_homogeneous_newton, vars::class_variables, s
         [ A 		-b	   -D_z	]
         ];
 
-      #GLOBAL_timer::class_algorithm_timer
-      #GLOBAL_timer.start("Factor")
+      start_advanced_timer("Factor");
       inertia = ls_factor(newt.linear_system_solver,n(vars) + 1, m(vars));
-      #GLOBAL_timer.stop("Factor")
+      pause_advanced_timer("Factor");
 
       return inertia
   catch e
@@ -103,8 +102,13 @@ function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_v
 
 				sol = ones(num_vars + num_const + 1);
 				#linear_system_solver.ls_solve!(rhs,sol);
+        start_advanced_timer("Factor2");
 				fac = lufact(newt.K_true)
-				sol = fac \ rhs;
+				pause_advanced_timer("Factor2");
+
+        start_advanced_timer("Solve");
+        sol = fac \ rhs;
+        pause_advanced_timer("Solve");
 
 				dir = newt.direction;
 				x(dir, sol[1:num_vars] );
