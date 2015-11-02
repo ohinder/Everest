@@ -1,5 +1,7 @@
 module Everest
 
-# package code goes here
+include("loadcode.jl")
 
-end # module
+Pkg.generate("Everest","MIT")
+
+end
