@@ -45,20 +45,22 @@ function update_newton!(newt::class_homogeneous_newton, vars::class_variables, s
     try
       nlp_vals = newt.nlp_vals;
 
+      start_advanced_timer("Matrix creation");
+
       val_x_scaled = x_scaled(vars);
       H = nlp_vals.val_hesslag_prod;
-      h = H * val_x_scaled;
+      h = sparse(H * val_x_scaled);
       c = nlp_vals.val_gradc;
       A = nlp_vals.val_jac_a;
-      b = nlp_vals.val_b
+      b = sparse(nlp_vals.val_b);
 
       #res.H += newt.delta * speye(length(val_x_scaled))
       D_x = H + spdiagm( s(vars) ./ x(vars) ) + newt.delta * speye( n(vars) );
-      D_g = val_x_scaled' * ( H + newt.delta * speye( n(vars) ) ) * val_x_scaled + kappa(vars) / tau(vars);
+      D_g = sparse(val_x_scaled' * ( H + newt.delta * speye( n(vars) ) ) * val_x_scaled + kappa(vars) / tau(vars));
       #D_g = val_x_scaled' * nlp_vals.val_hesslag_prod * val_x_scaled + vars.kappa() / vars.tau() + this.delta;
       D_z = settings.diagonal_modification * speye(m(vars), m(vars));
-      v_1 = -c - h;
-      v_2 = c - h;
+      v_1 = sparse(-c - h);
+      v_2 = sparse(c - h);
       #v_3 = a - A * val_x_scaled;
 
       newt.K_true = [
@@ -66,12 +68,13 @@ function update_newton!(newt::class_homogeneous_newton, vars::class_variables, s
         [ v_1' 	D_g 	b' 	];
         [ A 	 -b	    D_z	]
         ];
-
       newt.K[:,:] = [
         [ D_x  		-h 	   A' 	];
         [ -h'	    D_g 	 -b' 	];
         [ A 		-b	   -D_z	]
         ];
+
+      pause_advanced_timer("Matrix creation");
 
       start_advanced_timer("Factor");
       inertia = ls_factor(newt.linear_system_solver,n(vars) + 1, m(vars));

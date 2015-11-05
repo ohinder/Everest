@@ -24,7 +24,7 @@ end
 
 function simple_gamma_strategy(newton_solver::abstract_newton_direction, vars::class_variables, settings::class_settings)
 	try
-		gamma = 0.8;
+		gamma = 0.9;
 		compute_newton_direction!(newton_solver, vars, gamma, 1.0);
 		vars, alpha = line_search(vars, newton_solver.direction);
 

@@ -45,7 +45,7 @@ function terminate_algorithm(vars::class_variables, residuals::class_homogeneous
 				#println("res:", residuals.primal_infeas_norm, " ", residuals.dual_infeas_norm)
 				if residuals.primal_infeas_sign == 1 && residuals.primal_infeas_norm < settings.primal_infeas_tol
 					return 2;
-				elseif residuals.dual_infeas_sign == 1 && residuals.dual_infeas_norm < settings.dual_infeas_tol && residuals.func_val < -settings.unbounded_value
+				elseif residuals.dual_infeas_sign == 1 && residuals.dual_infeas_norm < settings.dual_infeas_tol && residuals.val_c < -settings.unbounded_value
 					return 3;
 				end
 			end
@@ -77,6 +77,8 @@ function homogeneous_algorithm(qp::class_quadratic_program, vars::class_variable
 
     pause_advanced_timer("Intial");
 
+
+
 		it = 0;
 		gamma = 0.0;
 		num_trials = 0;
@@ -92,7 +94,10 @@ function homogeneous_algorithm(qp::class_quadratic_program, vars::class_variable
       #vars, alpha, gamma = simple_gamma_strategy(newton_solver, vars, settings)
 			vars, alpha, gamma = hybrid_mu_strategy(newton_solver, vars, settings, used_delta)
 
+      start_advanced_timer("residuals");
 			update_residuals!(newton_solver.residuals, qp, vars, newton_solver);
+      pause_advanced_timer("residuals");
+
 			display_progress(it, alpha, gamma, newton_solver.residuals, vars, newton_solver.direction, used_delta, num_trials, num_facs, settings);
 
 			status = terminate_algorithm(vars, newton_solver.residuals, settings);
@@ -102,6 +107,8 @@ function homogeneous_algorithm(qp::class_quadratic_program, vars::class_variable
 				break
 			end
 		end
+
+
 
 		if status == 0
 			print_if("MAXIMUM ITERATIONS REACHED", settings.verbose)

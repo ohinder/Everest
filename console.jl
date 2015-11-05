@@ -1,7 +1,8 @@
-using Everest
+#using Everest
 
-#include("src/loadcode.jl");
-test_problem("BORE3D")
+include("src/loadcode.jl");
+test_problem("BEACONFD")
+
 
 
 

@@ -46,7 +46,7 @@ function update_residuals!(res::class_homogeneous_residuals, nlp_eval::internal_
 
 				res.r_D = s(vars) - tau(vars) * nlp_vals.val_gradlag;
 				res.r_G = kappa(vars) + dot(nlp_vals.val_gradlag, x(vars)) + dot(nlp_vals.val_a, y(vars));
-				res.r_P = - tau(vars) * nlp_vals.val_a;
+				res.r_P = -tau(vars) * nlp_vals.val_a;
 
 				res.r_D_norm = norm(res.r_D,1);
 				res.r_G_norm = abs(res.r_G);

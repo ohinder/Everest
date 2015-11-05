@@ -1,4 +1,4 @@
-export test_problem
+export test_problem, tridiagonal
 
 #
 # test the linear program solver on a simple problem
@@ -14,11 +14,10 @@ function test_problem(name::String)
 	file_name = name * ".mat";
 
   dir = dirname(@__FILE__) * "/Problems/"
-	println(dir)
+
   A, b, c = get_netlib_problem(dir, file_name);
-	#Q = -speye(length(c));
-	Q = tridiagonal(length(c),0.0,1.0);
-	#Q = spzeros(length(c),length(c));
+  Q = tridiagonal(length(c),-1.0,0.0);
+
 	println("Solving ", file_name, " with the homogeneous algorithm")
 	println(size(A,2), " variables and ", size(A,1), " constraints")
 	println("Non-zeros: ", length(nonzeros(A)))
@@ -35,5 +34,5 @@ function test_problem(name::String)
 
 	println("=========================================================================")
 	println("Calls IPOPT")
-	solve_with_JuMP(A, b, c, Q, IpoptSolver(max_iter=10,print_level=3));
+	solve_with_JuMP(A, b, c, Q, IpoptSolver(max_iter=300,print_level=3));
 end
