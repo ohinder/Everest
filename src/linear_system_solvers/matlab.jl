@@ -42,3 +42,15 @@ function ls_solve!(solver::linear_solver_MATLAB, my_rhs::Array{Float64,1}, my_so
       my_sol[1:length(my_sol)] =  mat_solution;
 end
 
+function ls_solve(solver::linear_solver_MATLAB, my_rhs::AbstractArray)
+      @mput my_rhs
+
+      @matlab begin
+        mat_solution = mat_S * ( mat_P* (mat_L'\ (mat_D\ (mat_L\ (mat_P' * ( mat_S * my_rhs ) ) ) ) ) );
+      end
+
+      @mget mat_solution
+
+      return mat_solution;
+end
+

@@ -5,7 +5,7 @@ type class_homogeneous_newton <: abstract_newton_direction
   nlp_vals::class_nlp_cache
 
 	K::SparseMatrixCSC{Float64,Int64}
-  K_true::SparseMatrixCSC{Float64,Int64}
+  W::woodbury_identity
 
 	linear_system_solver::abstract_linear_system_solver
 
@@ -55,19 +55,20 @@ function update_newton!(newt::class_homogeneous_newton, vars::class_variables, s
       b = sparse(nlp_vals.val_b);
 
       #res.H += newt.delta * speye(length(val_x_scaled))
-      D_x = H + spdiagm( s(vars) ./ x(vars) ) + newt.delta * speye( n(vars) );
-      D_g = sparse(val_x_scaled' * ( H + newt.delta * speye( n(vars) ) ) * val_x_scaled + kappa(vars) / tau(vars));
+      D_x = H + spdiagm( s(vars) ./ x(vars) ) #+ ( newt.delta + settings.diagonal_modification ) * speye( n(vars) )
+      D_g = sparse(val_x_scaled' * H * val_x_scaled + kappa(vars) / tau(vars)) #+ settings.diagonal_modification;
       #D_g = val_x_scaled' * nlp_vals.val_hesslag_prod * val_x_scaled + vars.kappa() / vars.tau() + this.delta;
-      D_z = settings.diagonal_modification * speye(m(vars), m(vars));
-      v_1 = sparse(-c - h);
-      v_2 = sparse(c - h);
+      D_z = settings.diagonal_modification * speye(m(vars));
+      #v_1 = sparse(-c - h);
+      #v_2 = sparse(c - h);
       #v_3 = a - A * val_x_scaled;
 
-      newt.K_true = [
-        [ D_x  	v_2 	-A' 	];
-        [ v_1' 	D_g 	b' 	];
-        [ A 	 -b	    D_z	]
-        ];
+     # newt.K_true = [
+     #   [ D_x  	c - h	-A' 	];
+     #   [ -c -h' 	D_g 	b' 	];
+     #   [ A 	 -b	    D_z	]
+     #   ];
+
       newt.K[:,:] = [
         [ D_x  		-h 	   A' 	];
         [ -h'	    D_g 	 -b' 	];
@@ -76,18 +77,49 @@ function update_newton!(newt::class_homogeneous_newton, vars::class_variables, s
 
       pause_advanced_timer("Matrix creation");
 
-      start_advanced_timer("Factor");
-      inertia = ls_factor(newt.linear_system_solver,n(vars) + 1, m(vars));
-      pause_advanced_timer("Factor");
-
-      return inertia
+      return factorize_newton!(newt, vars)
   catch e
       println("ERROR in class_homogeneous_newton.update_newton!")
       throw(e)
   end
 end
 
-function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_variables, gamma::Float64, eta::Float64)
+function update_newton_diag!(newt::class_homogeneous_newton, vars::class_variables, settings::class_settings)
+    H = newt.nlp_vals.val_hesslag_prod;
+    D_x_diag = diag(H) + s(vars) ./ x(vars) + newt.delta
+
+    val_x_scaled = x_scaled(vars);
+    D_g = val_x_scaled' * H * val_x_scaled + kappa(vars) / tau(vars) + newt.delta * norm(val_x_scaled,2)^2;
+    diag_mod = [ D_x_diag; D_g; -settings.diagonal_modification*ones(m(vars))];
+
+    for i = 1:size(newt.K,1)
+        newt.K[i,i] = diag_mod[i];
+    end
+
+    return factorize_newton!(newt, vars)
+end
+
+function factorize_newton!(newt::class_homogeneous_newton, vars::class_variables)
+      start_advanced_timer("Factor");
+      inertia = ls_factor(newt.linear_system_solver, n(vars) + 1, m(vars));
+      pause_advanced_timer("Factor");
+
+      return inertia
+end
+
+function form_woodbury!(newt::class_homogeneous_newton, vars::class_variables)
+        start_advanced_timer("woodbury_factor");
+        c = newt.nlp_vals.val_gradc;
+
+        vec = [c; zeros( 1 + m(vars) )];
+        len = n(vars) + m(vars) + 1;
+        U = [-e_( 1 + n(vars), len) vec];
+        V = [vec e_( 1 + n(vars), len)]';
+        newt.W = woodbury_identity(newt.linear_system_solver, U, V);
+        pause_advanced_timer("woodbury_factor");
+end
+
+function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_variables, theta::class_theta)
 			try
         num_vars = n(vars);
         num_const = m(vars);
@@ -95,28 +127,34 @@ function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_v
 
 				mu = res.mu;
 
-				xs = -x(vars) .* s(vars) + gamma * mu * ones(num_vars);
-				tk = -tau(vars) * kappa(vars) + gamma * mu;
+				xs = -x(vars) .* s(vars) + theta.mu * mu * ones(num_vars);
+				tk = -tau(vars) * kappa(vars) + theta.mu * mu;
 
 				rhs =
-        [	eta * res.r_D + xs ./ x(vars);
-				eta * res.r_G + tk / tau(vars);
-				eta * res.r_P ];
+        [	(1.0 - theta.dual) * res.r_D + xs ./ x(vars);
+				(1.0 - theta.dual) * res.r_G + tk / tau(vars);
+				(1.0 - theta.primal) * res.r_P ];
 
-				sol = ones(num_vars + num_const + 1);
 				#linear_system_solver.ls_solve!(rhs,sol);
-        start_advanced_timer("Factor2");
-				fac = lufact(newt.K_true)
-				pause_advanced_timer("Factor2");
+        #start_advanced_timer("Factor2");
+				#fac = lufact(newt.K_true)
+				#pause_advanced_timer("Factor2");
 
         start_advanced_timer("Solve");
-        sol = fac \ rhs;
+        #sol = (newt.K + U * newt.W.V) \ rhs;
+        sol = ls_solve(newt.W, rhs);
+        @assert(norm(newt.K * sol + newt.W.U * (newt.W.V * sol) - rhs,1)/norm(rhs,1) < 1e-2)
         pause_advanced_timer("Solve");
 
+        #println(full(newt.K_true))
+        #abs_error = norm(newt.K_true * sol - rhs,1)
+        #println("absolute_error=",abs_error)
+
+        # update direction from linear system solution
 				dir = newt.direction;
 				x(dir, sol[1:num_vars] );
 				tau(dir, sol[ num_vars + 1] );
-				y(dir, sol[( num_vars + 2):( num_const +  num_vars + 1)] );
+				y(dir, -sol[( num_vars + 2):( num_const +  num_vars + 1)] );
 
 				s(dir,(xs - s(vars) .* x(dir)) ./ x(vars) );
 				kappa(dir, (tk - kappa(vars) * tau(dir)) / tau(vars) );
@@ -124,7 +162,8 @@ function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_v
 				# is this direction valid ?
 				check_for_wrong_vals(dir);
 			catch e
-				println("ERROR in class_newton_solver.compute_direction")
+				println("ERROR in class_newton_solver.compute_newton_direction!")
+        #@show full(newt.K + newt.W.U * newt.W.V)
 				throw(e)
 			end
 		end

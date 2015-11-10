@@ -28,3 +28,10 @@ function ls_solve!(solver::linear_solver_JULIA, my_rhs::Array{Float64,1}, my_sol
   my_sol[1:length(my_sol)] = solver._factor \ my_rhs; #::UmfpackLU{Float64,Int64}
   #GLOBAL_timer.stop("Solve/julia")
 end
+
+function ls_solve(solver::linear_solver_JULIA, my_rhs::AbstractArray)
+  #GLOBAL_timer::class_algorithm_timer
+  #GLOBAL_timer.start("Solve/julia")
+  return solver._factor \ my_rhs; #::UmfpackLU{Float64,Int64}
+  #GLOBAL_timer.stop("Solve/julia")
+end

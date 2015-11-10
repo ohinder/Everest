@@ -2,7 +2,7 @@ function predictor_corrector(newton_solver::abstract_newton_direction, vars::cla
 	try
 		# predictor
 		gamma = 0.0;
-		compute_newton_direction!(newton_solver, vars, gamma, 1 - gamma); # eta_P, eta_D, eta_G ???
+		compute_newton_direction!(newton_solver, vars, class_theta(gamma,gamma,gamma)); # eta_P, eta_D, eta_G ???
 
 		predictor_vars, = line_search(vars, newton_solver.direction);
 
@@ -11,8 +11,8 @@ function predictor_corrector(newton_solver::abstract_newton_direction, vars::cla
 
 		# corrector
 		reduction = predictor_mu/intial_mu;
-		gamma = (reduction)^3 #*0.8;
-		compute_newton_direction!(newton_solver, vars, gamma, 1 - gamma);
+		gamma = reduction^3 #(reduction)^3 #*0.8;
+		compute_newton_direction!(newton_solver, vars, class_theta(gamma,gamma,gamma));
 		vars, alpha = line_search(vars, newton_solver.direction);
 
 		return vars, alpha, gamma
@@ -25,7 +25,7 @@ end
 function simple_gamma_strategy(newton_solver::abstract_newton_direction, vars::class_variables, settings::class_settings)
 	try
 		gamma = 0.9;
-		compute_newton_direction!(newton_solver, vars, gamma, 1.0);
+		compute_newton_direction!(newton_solver, vars, class_theta(0.95,0.5,0.5));
 		vars, alpha = line_search(vars, newton_solver.direction);
 
 		return vars, alpha, gamma

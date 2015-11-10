@@ -1,15 +1,22 @@
 EMPTY_ARRAY = spzeros(0,1)*[0.0];
 
-function get_netlib_problem(file_name::String)
-	file = matopen(file_name)
-	A= sparse(read(file, "A"))
-	b = read(file,"b")
-	b = b[:]
-	c = read(file,"c")
-	c = c[:];
+#function get_netlib_problem(file_name::String)
+#	file = matopen(file_name)
+#	A= sparse(read(file, "A"))
+#	b = read(file,"b")
+#	b = b[:]
+#	c = read(file,"c")
+#	c = c[:];
+#
+#	return A, b, c
+#end
 
-	return A, b, c
+
+function get_netlib_problem(file_name::String)
+  dir = dirname(@__FILE__) * "/Problems/"
+  return get_netlib_problem(dir, file_name)
 end
+
 
 using MATLAB
 function get_netlib_problem(dir::String, file_name::String)
@@ -90,7 +97,7 @@ function solve_with_JuMP(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float64,1},
 end
 
 function trivial_test(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float64,1}, c::Array{Float64,1}, correct_status::Int64, problem_name = "", settings::class_settings = class_settings(), verbose = false)
-	return trivial_test(A, b, c, spzeros(length(c),length(c)), correct_status, problem_name, settings)
+	return trivial_test(A, b, c, spzeros(length(c),length(c)), correct_status, problem_name, settings, verbose)
 end
 
 function trivial_test(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float64,1}, c::Array{Float64,1}, Q::SparseMatrixCSC{Float64,Int64}, correct_status::Int64, problem_name = "", settings::class_settings = class_settings(), verbose = false)

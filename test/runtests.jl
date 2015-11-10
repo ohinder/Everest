@@ -2,16 +2,17 @@
 # Tests of individual functions
 # Tests of code to solve simple unbounded, bounded problems etc ...
 
- using Base.Test
+using Base.Test
+
 begin
-  # includes
+  # includ
   include("../src/loadcode.jl");
 
 
   function runtests()
     begin
       include("test_linear_system_solvers.jl")
-
+      include("test_helpers.jl")
       ###############################
       # test core
       ###############################
@@ -83,7 +84,6 @@ begin
             newt = class_homogeneous_newton();
             initialize_newton!(newt, qp, vars, settings)
             res = class_homogeneous_residuals();
-
         end
 
 
@@ -95,7 +95,8 @@ begin
             validate_dimensions(qp, vars)
             initialize_newton!(newt, qp, vars, settings)
             update_newton!(newt, vars, settings)
-            compute_newton_direction!(newt, vars, 0.5, 0.5)
+            form_woodbury!(newt, vars)
+            compute_newton_direction!(newt, vars, class_theta(0.5,0.5,0.5))
         end
 
         # test line search
@@ -113,7 +114,7 @@ begin
             #println("TEST IPOPT INERTIA CORRECTION")
             validate_dimensions(qp, vars)
             delta, number_of_factors = ipopt_style_inertia_correction!(newt, vars, settings)
-            @test delta == settings.delta_min
+            @test delta == 0.0
             @test number_of_factors == 1
         end
 
@@ -143,7 +144,13 @@ begin
 
     end
   end
+
+
+
   runtests();
+
+  include("basic_tests.jl")
 end
+
 
 

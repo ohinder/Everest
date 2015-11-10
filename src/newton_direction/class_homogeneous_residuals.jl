@@ -49,7 +49,7 @@ function update_residuals!(res::class_homogeneous_residuals, nlp_eval::internal_
 				res.r_P = -tau(vars) * nlp_vals.val_a;
 
 				res.r_D_norm = norm(res.r_D,1);
-				res.r_G_norm = abs(res.r_G);
+				res.r_G_norm = res.r_G;
 				res.r_P_norm = norm(res.r_P,1);
 
 				# other stuff
@@ -63,13 +63,13 @@ function update_residuals!(res::class_homogeneous_residuals, nlp_eval::internal_
 				res.primal_norm = norm(res.r_P,1)/tau(vars);
 				res.dual_norm = norm(res.r_D,1)/tau(vars);
 
-				primal_infeas_obj = -dot(nlp_vals.val_b, y(vars));
-				dual_infeas_obj = -dot(x(vars), nlp_vals.val_gradc);
+				primal_infeas_obj = dot(nlp_vals.val_b, y(vars));
+				dual_infeas_obj = -dot(x_scaled(vars), nlp_vals.val_gradc);
 				res.primal_infeas_sign = sign(primal_infeas_obj);
 				res.dual_infeas_sign = sign(dual_infeas_obj);
 
 				res.primal_infeas_norm = norm(s(vars) + nlp_vals.val_jac_a' * y(vars),1)/abs(primal_infeas_obj);
- 				res.dual_infeas_norm = norm(nlp_vals.val_jac_a * x(vars),1)/abs(dual_infeas_obj);
+ 				res.dual_infeas_norm = res.r_P_norm/abs(dual_infeas_obj);
 
 			catch e
 				  println("ERROR in class_residuals.update")

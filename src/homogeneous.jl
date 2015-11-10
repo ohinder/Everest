@@ -17,7 +17,7 @@ end
 function display_progress(itr::Int64, alpha::Float64, gamma::Float64, residuals::class_homogeneous_residuals, vars::class_variables, direction::class_variables, delta::Float64, ls_num_trials::Int64, num_facs::Int64, settings::class_settings)
 	try
 		output = @sprintf("%s %2.1e %2.1e | %2.1e %2.1e | %2.1e %2.1e %2.1e %2.1e %2.1e | %2.1e %2.1e %s %s \n",
-                      rpad(string(itr),3), alpha, gamma, tau(vars), kappa(vars), residuals.scaled_mu, residuals.r_G_norm, residuals.r_P_norm, residuals.r_D_norm, residuals.val_c, delta, alpha * norm(direction._v,1), rpad(string(ls_num_trials),2), rpad(string(num_facs),2) )
+                      rpad(string(itr),3), alpha, gamma, tau(vars), kappa(vars), residuals.mu, residuals.r_G_norm, residuals.r_P_norm, residuals.r_D_norm, residuals.val_c, delta, alpha * norm(direction._v,1), rpad(string(ls_num_trials),2), rpad(string(num_facs),2) )
 
 		if settings.verbose
 			print(output)
@@ -47,7 +47,7 @@ function terminate_algorithm(vars::class_variables, residuals::class_homogeneous
 					return 2;
 				elseif residuals.dual_infeas_sign == 1 && residuals.dual_infeas_norm < settings.dual_infeas_tol && residuals.val_c < -settings.unbounded_value
 					return 3;
-				end
+        end
 			end
 		end
 
@@ -62,6 +62,8 @@ end
 
 function homogeneous_algorithm(qp::class_quadratic_program, vars::class_variables, settings::class_settings)
 	alpha = 0.0;
+  it = 0;
+
 	try
     reset_advanced_timer()
     start_advanced_timer();
@@ -77,9 +79,6 @@ function homogeneous_algorithm(qp::class_quadratic_program, vars::class_variable
 
     pause_advanced_timer("Intial");
 
-
-
-		it = 0;
 		gamma = 0.0;
 		num_trials = 0;
 		total_factorizations = 0;
@@ -88,7 +87,8 @@ function homogeneous_algorithm(qp::class_quadratic_program, vars::class_variable
 		display_progress(it, alpha, gamma, newton_solver.residuals, vars, newton_solver.direction, newton_solver.delta, num_trials, 0, settings);
 
 		for it = 1:settings.max_it
-      used_delta, num_facs = ipopt_style_inertia_correction!(newton_solver, vars, settings)
+      #used_delta, num_facs = ipopt_style_inertia_correction!(newton_solver, vars, settings)
+      used_delta, num_facs = iterative_trust_region!(newton_solver, vars, settings)
 			total_factorizations += num_facs;
 
       #vars, alpha, gamma = simple_gamma_strategy(newton_solver, vars, settings)
@@ -124,6 +124,7 @@ function homogeneous_algorithm(qp::class_quadratic_program, vars::class_variable
 		return status, vars, it, total_factorizations
 	catch e
 		println("alpha = ", alpha)
+    println("iteration = ", it)
 		println("ERROR in homogeneous_algorithm")
 		throw(e)
 	end

@@ -2,10 +2,10 @@
 # test linear system solvers
 
 function test_linear_solver(solver::abstract_linear_system_solver)
-   mat = speye(10);
+   mat = sparse(rand(10,10));
+   mat = mat + mat' + 20 * speye(10,10);
    initialize!(solver,mat);
 
-   mat[1,1] = 2;
    @test solver._SparseMatrix == mat
 
    inertia = ls_factor(solver, 10, 0)
@@ -13,9 +13,10 @@ function test_linear_solver(solver::abstract_linear_system_solver)
 
    sol = 1.0*zeros(10);
    rhs = 1.0*ones(10);
-   ls_solve!(solver,rhs,sol);
+   sol = ls_solve(solver,rhs);
 
-   @test sol == [0.5,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]
+   #sol = ls_solve(solver,rhs);
+   @test norm(mat*sol - rhs,1)/norm(sol,1) < 1e-6
 end
 
 

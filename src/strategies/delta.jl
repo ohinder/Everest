@@ -5,11 +5,13 @@ function ipopt_style_inertia_correction!(newt::abstract_newton_direction, vars::
 		j = 1;
 		used_delta = 0.0;
 
-		newt.delta = max(newt.delta, settings.delta_min );
+    if newt.delta < settings.delta_min
+        newt.delta = 0.0;
+    end
 
 		# try delta = 0.0
 		old_delta = newt.delta;
-		newt.delta = settings.delta_min;
+		newt.delta = 0.0;
 		inertia = update_newton!(newt, vars, settings);
 
 		if inertia == 1
@@ -18,34 +20,24 @@ function ipopt_style_inertia_correction!(newt::abstract_newton_direction, vars::
 			newt.delta = old_delta;
 
 			for j = 2:MAX_IT
-				inertia = update_newton!(newt, vars, settings)
+				inertia = update_newton_diag!(newt, vars, settings)
 
 				if inertia == 1
-					used_delta = newt.delta;
+            used_delta = newt.delta;
 
-					#toler = 1e-6
-					#eig_min, eigen_vector, err = newt.minimum_delta(nlp_eval, newt.delta, toler);
+            newt.delta = newt.delta * settings.delta_decrease;
 
-					#println(full(newt.K))
-					#suggested_delta = min(1.000,newt.delta * 0.999) #0.5*newt.delta + 0.5*smallest_delta;
-
-					#if err < toler
-					#newt.delta = max(-eig_min * 1.001, settings.delta_min)
-					#else
-					newt.delta = newt.delta * settings.delta_decrease;
-					#end
-
-					break
+            break
 				elseif inertia == 0
-					if newt.delta <= settings.delta_min;
-						newt.delta = settings.delta_start;
-					else
-						newt.delta = newt.delta * settings.delta_increase;
-					end
+            if newt.delta <= settings.delta_min;
+              newt.delta = settings.delta_start;
+            else
+              newt.delta = newt.delta * settings.delta_increase;
+            end
 				elseif inertia == -1
-					error("numerical stability issues when computing KKT system !!!")
+					  error("numerical stability issues when computing KKT system !!!")
 				else
-					error("inertia_corection")
+					  error("inertia_corection")
 				end
 			end
 		end
@@ -53,6 +45,7 @@ function ipopt_style_inertia_correction!(newt::abstract_newton_direction, vars::
 		if j == MAX_IT
 			error("maximum iterations for inertia_corection reached")
 		else
+      form_woodbury!(newt, vars)
 			return used_delta, j
 		end
 
@@ -62,3 +55,58 @@ function ipopt_style_inertia_correction!(newt::abstract_newton_direction, vars::
 		throw(e)
 	end
 end
+
+
+function iterative_trust_region!(newt::abstract_newton_direction, vars::class_variables, settings::class_settings)
+    # Goal: choose δ such that Δ = |log(x) - log(x + d_x)|_∞ = 0.5
+    # or |d_x/x|_∞ <= 0.5
+    # or |d_x^2/x^2| <= 1.0
+    #
+    #
+    # compute d'
+    try
+      newt.delta = 0.0;
+      inertia = update_newton!(newt, vars, settings);
+
+      print(1)
+
+      if inertia
+          best_δ = 0.0;
+      else
+          target = 0.9;
+          best_val = Inf;
+          δ_vals = 2.^linspace(-4.0,4.0,10)
+
+           print(2)
+
+          for δ = δ_vals
+              newt.delta = δ
+              inertia = update_newton_diag!(newt, vars, settings);
+              print(3)
+              compute_newton_direction!(newt, vars, class_theta(0.95,0.5,0.5));
+              alpha_max = maximum_step(vars, newt.direction);
+
+              print(4)
+
+              val = abs(log(best_alpha) - log(target));
+              if inertia && best_val > val
+                  best_val = val;
+                  best_δ = δ;
+              end
+
+              print(5)
+          end
+      end
+
+      form_woodbury!(newt, vars)
+      return best_δ, 1
+    catch e
+        println("ERROR in delta.iterative_trust_region!")
+        throw(e)
+	  end
+end
+
+#vars = class_variables(1,1);
+#dir = deepcopy(vars);
+#x(dir,[-0.5])
+#alpha_max = maximum_step(vars,dir)
