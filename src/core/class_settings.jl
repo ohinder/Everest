@@ -30,11 +30,10 @@ type class_settings
 		this = new();
 
 		# termination criteron
-		this.max_it = 100;
+		this.max_it = 300;
 
-		this.kappa_tau_tol = Inf; #1e-8
+		this.kappa_tau_tol = 1e-8
 		this.gap_tol = 1e-8;
-
 		this.primal_tol = 1e-8;
 		this.dual_tol = 1e-8;
 
@@ -43,7 +42,7 @@ type class_settings
 		this.unbounded_value = 1e4;
 
 		# algorithm parameters
-		this.diagonal_modification = 1e-6;
+		this.diagonal_modification = 1e-10 #1e-10;
 
 		# algorithm strategies
 		this.linear_system_solver = linear_solver_MATLAB();

@@ -28,10 +28,18 @@ type woodbury_identity
     end
 end
 
+function evaluate(W::woodbury_identity, sol::Array{Float64,1})
+    return W.factored_A._SparseMatrix * sol + W.U * (W.V * sol)
+end
 
 function ls_solve(W::woodbury_identity, rhs::Array{Float64,1})
     my_temp = ls_solve(W.factored_A, rhs)
     return (my_temp - W.invA_U * (W.factored_capacitance_matrix \ (W.V * my_temp)))
+end
+
+function ls_solve_direct(W::woodbury_identity, rhs::Array{Float64,1}) # if there is numerical errors
+    mat = W.factored_A._SparseMatrix + sparse(W.U) * sparse(W.V)
+    return lufact(mat) \ rhs;
 end
 
 function numerical_error(A, sol, rhs)

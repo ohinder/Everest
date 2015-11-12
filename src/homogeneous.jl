@@ -32,15 +32,14 @@ end
 
 function terminate_algorithm(vars::class_variables, residuals::class_homogeneous_residuals, settings::class_settings)
 	try
-		kappa_tau_off = true
 		if residuals.scaled_mu < settings.gap_tol
-			if kappa(vars)/tau(vars) < settings.kappa_tau_tol || kappa_tau_off
+			if kappa(vars)/tau(vars) < settings.kappa_tau_tol
 				if residuals.primal_norm < settings.primal_tol && residuals.dual_norm < settings.dual_tol
 					return 1;
 				end
 			end
 
-			if tau(vars) / kappa(vars) < settings.kappa_tau_tol || kappa_tau_off
+			if tau(vars) / kappa(vars) < settings.kappa_tau_tol
 				#println( -(residuals.b' * vars.y())[1], " ", (vars.x()' * residuals.c)[1])
 				#println("res:", residuals.primal_infeas_norm, " ", residuals.dual_infeas_norm)
 				if residuals.primal_infeas_sign == 1 && residuals.primal_infeas_norm < settings.primal_infeas_tol
@@ -87,12 +86,14 @@ function homogeneous_algorithm(qp::class_quadratic_program, vars::class_variable
 		display_progress(it, alpha, gamma, newton_solver.residuals, vars, newton_solver.direction, newton_solver.delta, num_trials, 0, settings);
 
 		for it = 1:settings.max_it
-      #used_delta, num_facs = ipopt_style_inertia_correction!(newton_solver, vars, settings)
-      used_delta, num_facs = iterative_trust_region!(newton_solver, vars, settings)
+      used_delta, num_facs = ipopt_style_inertia_correction!(newton_solver, vars, settings)
+      #used_delta, num_facs = iterative_trust_region!(newton_solver, vars, settings)
 			total_factorizations += num_facs;
 
+      #vars, alpha, gamma = predictor_corrector(newton_solver, vars, settings)
       #vars, alpha, gamma = simple_gamma_strategy(newton_solver, vars, settings)
 			vars, alpha, gamma = hybrid_mu_strategy(newton_solver, vars, settings, used_delta)
+      #@assert(alpha >= 0.5)
 
       start_advanced_timer("residuals");
 			update_residuals!(newton_solver.residuals, qp, vars, newton_solver);

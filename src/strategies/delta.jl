@@ -1,7 +1,7 @@
 function ipopt_style_inertia_correction!(newt::abstract_newton_direction, vars::class_variables, settings::class_settings)
 	try
 
-		MAX_IT = 50;
+		MAX_IT = 25;
 		j = 1;
 		used_delta = 0.0;
 
@@ -68,34 +68,31 @@ function iterative_trust_region!(newt::abstract_newton_direction, vars::class_va
       newt.delta = 0.0;
       inertia = update_newton!(newt, vars, settings);
 
-      print(1)
-
       if inertia
           best_δ = 0.0;
       else
-          target = 0.9;
+          target = 2.0;
           best_val = Inf;
-          δ_vals = 2.^linspace(-4.0,4.0,10)
-
-           print(2)
+          δ_vals = 2.^linspace(0.0,4.0,20)
 
           for δ = δ_vals
               newt.delta = δ
               inertia = update_newton_diag!(newt, vars, settings);
-              print(3)
-              compute_newton_direction!(newt, vars, class_theta(0.95,0.5,0.5));
-              alpha_max = maximum_step(vars, newt.direction);
+              if inertia
+                  form_woodbury!(newt, vars)
+                  if compute_newton_direction!(newt, vars, class_theta(0.99,0.5,0.5));
+                      alpha_max = maximum_step(vars, newt.direction);
 
-              print(4)
-
-              val = abs(log(best_alpha) - log(target));
-              if inertia && best_val > val
-                  best_val = val;
-                  best_δ = δ;
+                      val = abs(log(alpha_max) - log(target));
+                      if best_val > val
+                          best_val = val;
+                          best_δ = δ;
+                      end
+                  end
               end
-
-              print(5)
           end
+
+          @assert(best_val < Inf)
       end
 
       form_woodbury!(newt, vars)

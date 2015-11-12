@@ -1,7 +1,7 @@
 #using Everest
 
 include("src/loadcode.jl");
-test_problem("BEACONFD")
+test_problem("BANDM")
 
 
 ##############################################################

@@ -6,6 +6,7 @@ type class_homogeneous_newton <: abstract_newton_direction
 
 	K::SparseMatrixCSC{Float64,Int64}
   W::woodbury_identity
+  W_updated::Bool
 
 	linear_system_solver::abstract_linear_system_solver
 
@@ -32,6 +33,7 @@ function initialize_newton!(newt::class_homogeneous_newton, nlp_eval::internal_A
 
 				newt.residuals = class_homogeneous_residuals();
         update_residuals!(newt.residuals, nlp_eval, vars, newt);
+        newt.W_updated = false;
 
         newt.delta = 0.0;
 			catch e
@@ -77,7 +79,7 @@ function update_newton!(newt::class_homogeneous_newton, vars::class_variables, s
 
       pause_advanced_timer("Matrix creation");
 
-      return factorize_newton!(newt, vars)
+      return update_newton_diag!(newt, vars, settings)
   catch e
       println("ERROR in class_homogeneous_newton.update_newton!")
       throw(e)
@@ -104,6 +106,8 @@ function factorize_newton!(newt::class_homogeneous_newton, vars::class_variables
       inertia = ls_factor(newt.linear_system_solver, n(vars) + 1, m(vars));
       pause_advanced_timer("Factor");
 
+      newt.W_updated = false;
+
       return inertia
 end
 
@@ -116,6 +120,8 @@ function form_woodbury!(newt::class_homogeneous_newton, vars::class_variables)
         U = [-e_( 1 + n(vars), len) vec];
         V = [vec e_( 1 + n(vars), len)]';
         newt.W = woodbury_identity(newt.linear_system_solver, U, V);
+
+        newt.W_updated = true;
         pause_advanced_timer("woodbury_factor");
 end
 
@@ -140,10 +146,27 @@ function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_v
 				#fac = lufact(newt.K_true)
 				#pause_advanced_timer("Factor2");
 
+        @assert(newt.W_updated == true)
         start_advanced_timer("Solve");
         #sol = (newt.K + U * newt.W.V) \ rhs;
-        sol = ls_solve(newt.W, rhs);
-        @assert(norm(newt.K * sol + newt.W.U * (newt.W.V * sol) - rhs,1)/norm(rhs,1) < 1e-2)
+
+        tol = 1e-6
+        sol = false;
+        try
+          sol = ls_solve(newt.W, rhs);
+          err = norm(evaluate(newt.W, sol) - rhs,1)/norm(rhs,1);
+          @assert(err < tol)
+        catch e
+            println("Error using Woodbury")
+            println("numerical instability, using direct factorization instead of woodbury")
+            sol = ls_solve_direct(newt.W, rhs)
+            err = norm(evaluate(newt.W, sol) - rhs, 1)/norm(rhs,1);
+            if (err > tol)
+                println("numerical stability, computation skipped")
+                return false
+            end
+            println("direct factorization succeeded")
+        end
         pause_advanced_timer("Solve");
 
         #println(full(newt.K_true))
@@ -161,6 +184,8 @@ function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_v
 
 				# is this direction valid ?
 				check_for_wrong_vals(dir);
+
+        return true
 			catch e
 				println("ERROR in class_newton_solver.compute_newton_direction!")
         #@show full(newt.K + newt.W.U * newt.W.V)
