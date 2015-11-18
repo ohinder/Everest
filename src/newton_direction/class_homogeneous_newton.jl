@@ -78,8 +78,6 @@ function update_newton!(newt::class_homogeneous_newton, vars::class_variables, s
         ];
 
       pause_advanced_timer("Matrix creation");
-
-      return update_newton_diag!(newt, vars, settings)
   catch e
       println("ERROR in class_homogeneous_newton.update_newton!")
       throw(e)
@@ -92,6 +90,21 @@ function update_newton_diag!(newt::class_homogeneous_newton, vars::class_variabl
 
     val_x_scaled = x_scaled(vars);
     D_g = val_x_scaled' * H * val_x_scaled + kappa(vars) / tau(vars) + newt.delta * norm(val_x_scaled,2)^2;
+    diag_mod = [ D_x_diag; D_g; -settings.diagonal_modification*ones(m(vars))];
+
+    for i = 1:size(newt.K,1)
+        newt.K[i,i] = diag_mod[i];
+    end
+
+    return factorize_newton!(newt, vars)
+end
+
+function update_newton_diag_affine!(newt::class_homogeneous_newton, vars::class_variables, settings::class_settings)
+    H = newt.nlp_vals.val_hesslag_prod;
+    D_x_diag = diag(H) + s(vars) ./ x(vars) + newt.delta * x(vars).^(-2)
+
+    val_x_scaled = x_scaled(vars);
+    D_g = val_x_scaled' * H * val_x_scaled + kappa(vars) / tau(vars) + newt.delta / tau(vars)^2 #+ newt.delta * norm(val_x_scaled,2)^2;
     diag_mod = [ D_x_diag; D_g; -settings.diagonal_modification*ones(m(vars))];
 
     for i = 1:size(newt.K,1)

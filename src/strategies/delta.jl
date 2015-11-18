@@ -1,5 +1,7 @@
 function ipopt_style_inertia_correction!(newt::abstract_newton_direction, vars::class_variables, settings::class_settings)
 	try
+    delta_style! = update_newton_diag_affine!;
+
 
 		MAX_IT = 25;
 		j = 1;
@@ -12,7 +14,8 @@ function ipopt_style_inertia_correction!(newt::abstract_newton_direction, vars::
 		# try delta = 0.0
 		old_delta = newt.delta;
 		newt.delta = 0.0;
-		inertia = update_newton!(newt, vars, settings);
+		update_newton!(newt, vars, settings);
+    inertia = delta_style!(newt, vars, settings)
 
 		if inertia == 1
 			used_delta = newt.delta;
@@ -20,7 +23,7 @@ function ipopt_style_inertia_correction!(newt::abstract_newton_direction, vars::
 			newt.delta = old_delta;
 
 			for j = 2:MAX_IT
-				inertia = update_newton_diag!(newt, vars, settings)
+				inertia = delta_style!(newt, vars, settings)
 
 				if inertia == 1
             used_delta = newt.delta;

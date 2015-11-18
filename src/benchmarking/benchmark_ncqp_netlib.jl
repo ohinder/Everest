@@ -16,7 +16,7 @@ function test_problem(name::String)
   dir = dirname(@__FILE__) * "/Problems/"
 
   A, b, c = get_netlib_problem(dir, file_name);
-  Q = tridiagonal(length(c),-1.0, 1.0);
+  Q = tridiagonal(length(c),0.0, 1.0);
   #Q = tridiagonal(length(c),-1.0,0.0);
 
 	println("Solving ", file_name, " with the homogeneous algorithm")
