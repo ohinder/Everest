@@ -1,6 +1,6 @@
 function ipopt_style_inertia_correction!(newt::abstract_newton_direction, vars::class_variables, settings::class_settings)
 	try
-    delta_style! = update_newton_diag_affine!;
+    delta_style! = update_newton_diag!;
 
 
 		MAX_IT = 25;
