@@ -1,8 +1,7 @@
 #using Everest
 
 include("src/loadcode.jl");
-test_problem("BANDM")
-Pkg.update()
+test_problem_nlo("BRANDY")
 
 ##############################################################
 #############################################################

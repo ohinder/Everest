@@ -7,6 +7,7 @@ type class_homogeneous_newton <: abstract_newton_direction
 	K::SparseMatrixCSC{Float64,Int64}
   W::woodbury_identity
   W_updated::Bool
+  F_updated::Bool
 
 	linear_system_solver::abstract_linear_system_solver
 
@@ -77,6 +78,8 @@ function update_newton!(newt::class_homogeneous_newton, vars::class_variables, s
         [ A 		-b	   -D_z	]
         ];
 
+      newt.F_updated = false
+
       pause_advanced_timer("Matrix creation");
   catch e
       println("ERROR in class_homogeneous_newton.update_newton!")
@@ -120,11 +123,15 @@ function factorize_newton!(newt::class_homogeneous_newton, vars::class_variables
       pause_advanced_timer("Factor");
 
       newt.W_updated = false;
+      newt.F_updated = true;
 
       return inertia
 end
 
 function form_woodbury!(newt::class_homogeneous_newton, vars::class_variables)
+    try
+        @assert(newt.F_updated)
+
         start_advanced_timer("woodbury_factor");
         c = newt.nlp_vals.val_gradc;
 
@@ -132,10 +139,15 @@ function form_woodbury!(newt::class_homogeneous_newton, vars::class_variables)
         len = n(vars) + m(vars) + 1;
         U = [-e_( 1 + n(vars), len) vec];
         V = [vec e_( 1 + n(vars), len)]';
+
         newt.W = woodbury_identity(newt.linear_system_solver, U, V);
 
         newt.W_updated = true;
         pause_advanced_timer("woodbury_factor");
+  catch e
+      println("ERROR form_woodbury")
+      throw(e)
+  end
 end
 
 function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_variables, theta::class_theta)
@@ -170,15 +182,13 @@ function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_v
           err = norm(evaluate(newt.W, sol) - rhs,1)/norm(rhs,1);
           @assert(err < tol)
         catch e
-            println("Error using Woodbury")
-            println("numerical instability, using direct factorization instead of woodbury")
+            warn("numerical instability using Woodbury, using direct factorization instead of woodbury.")
             sol = ls_solve_direct(newt.W, rhs)
             err = norm(evaluate(newt.W, sol) - rhs, 1)/norm(rhs,1);
             if (err > tol)
-                println("numerical stability, computation skipped")
+                warn("numerical stability using direct factorization, computation skipped")
                 return false
             end
-            println("direct factorization succeeded")
         end
         pause_advanced_timer("Solve");
 

@@ -30,11 +30,15 @@ type class_homogeneous_residuals <: abstract_residuals
 end
 
 
+function merit_function(res::class_homogeneous_residuals, newt::abstract_newton_direction)
+
+end
+
+
 function update_residuals!(res::class_homogeneous_residuals, nlp_eval::internal_AbstractNLPEvaluator, vars::class_variables, newt::abstract_newton_direction)
 			try
         nlp_vals = newt.nlp_vals;
         update_nlp_cache!(nlp_vals, nlp_eval, vars)
-
 
 				res.mu = mu(newt,vars);
         res.val_c = nlp_vals.val_c

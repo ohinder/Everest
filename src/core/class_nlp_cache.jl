@@ -2,6 +2,8 @@ type class_nlp_cache
     # min f(x)
     # a(x) = 0
     # x >= 0
+    n::Int64
+    m::Int64
     val_c::Float64
     val_a::Array{Float64,1}
     val_jac_a::SparseMatrixCSC{Float64,Int64}
@@ -18,6 +20,9 @@ end
 
 function update_nlp_cache!(nlp_vals::class_nlp_cache, nlp_eval::internal_AbstractNLPEvaluator, vars::class_variables)
     try
+        nlp_vals.n = n(nlp_eval)
+        nlp_vals.m = m(nlp_eval)
+
         val_x_scaled = x_scaled(vars);
         val_y_scaled = y_scaled(vars);
 

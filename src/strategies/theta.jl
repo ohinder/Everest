@@ -92,7 +92,7 @@ end
 function hybrid_mu_strategy(newton_solver::abstract_newton_direction, vars::class_variables, settings::class_settings, used_delta::Float64)
 	try
 		if used_delta > settings.delta_min
-			vars, alpha, gamma = simple_gamma_strategy2(newton_solver, vars, settings)
+			vars, alpha, gamma = simple_gamma_strategy(newton_solver, vars, settings)
       #vars, alpha, gamma = balancing_gamma_strategy(newton_solver, vars, settings)
 		else
 			vars, alpha, gamma = predictor_corrector(newton_solver, vars, settings)

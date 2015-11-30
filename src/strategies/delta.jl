@@ -2,41 +2,33 @@ function ipopt_style_inertia_correction!(newt::abstract_newton_direction, vars::
 	try
     delta_style! = update_newton_diag!;
 
-
 		MAX_IT = 25;
 		j = 1;
-		used_delta = 0.0;
-
-    if newt.delta < settings.delta_min
-        newt.delta = 0.0;
-    end
+		new_delta = 0.0;
 
 		# try delta = 0.0
-		old_delta = newt.delta;
-		newt.delta = 0.0;
-		update_newton!(newt, vars, settings);
+    old_delta = newt.delta;
+    newt.delta = new_delta;
+    update_newton!(newt, vars, settings);
     inertia = delta_style!(newt, vars, settings)
 
 		if inertia == 1
-			used_delta = newt.delta;
+			new_delta = 0.0; # no need to modify newton system
 		else
 			newt.delta = old_delta;
+
+      if newt.delta <= settings.delta_min;
+            newt.delta = settings.delta_start;
+      end
 
 			for j = 2:MAX_IT
 				inertia = delta_style!(newt, vars, settings)
 
 				if inertia == 1
-            used_delta = newt.delta;
-
-            newt.delta = newt.delta * settings.delta_decrease;
-
+            new_delta = newt.delta * settings.delta_decrease
             break
 				elseif inertia == 0
-            if newt.delta <= settings.delta_min;
-              newt.delta = settings.delta_start;
-            else
-              newt.delta = newt.delta * settings.delta_increase;
-            end
+            newt.delta = newt.delta * settings.delta_increase;
 				elseif inertia == -1
 					  error("numerical stability issues when computing KKT system !!!")
 				else
@@ -49,7 +41,7 @@ function ipopt_style_inertia_correction!(newt::abstract_newton_direction, vars::
 			error("maximum iterations for inertia_corection reached")
 		else
       form_woodbury!(newt, vars)
-			return used_delta, j
+			return new_delta, j
 		end
 
 

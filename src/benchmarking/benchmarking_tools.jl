@@ -29,7 +29,6 @@ function get_netlib_problem(dir::String, file_name::String)
 	return A, b, c
 end
 
-using MAT
 function test_homogeneous_algorithm(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float64,1}, c::Array{Float64,1}, settings::class_settings)
 	return test_homogeneous_algorithm(A, b, c, spzeros(length(c),length(c)), settings);
 end

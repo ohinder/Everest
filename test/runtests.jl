@@ -92,9 +92,13 @@ begin
 
             @test 1.0 == mu(newt, vars);
 
+            @show n(vars), m(vars)
+
             validate_dimensions(qp, vars)
             initialize_newton!(newt, qp, vars, settings)
             update_newton!(newt, vars, settings)
+            update_newton_diag!(newt, vars, settings)
+            validate_dimensions( newt.nlp_vals )
             form_woodbury!(newt, vars)
             compute_newton_direction!(newt, vars, class_theta(0.5,0.5,0.5))
         end
@@ -103,6 +107,7 @@ begin
         begin
             vars2= class_variables(5,3);
             direction = class_variables(5,3);
+            x(direction, -x(vars2))
             vars2, alpha = line_search(vars2, direction);
             @test alpha < 1
         end

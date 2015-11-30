@@ -5,7 +5,7 @@ function line_search(vars::class_variables, direction::class_variables)
 
 		vars = deepcopy(vars)
 		alpha_max = maximum_step(vars, direction);
-		alpha = 0.9*min(1.0,0.9*alpha_max);
+		alpha = 1.0*min(1.0,0.95*alpha_max);
 		move!(vars, alpha, direction);
 
 		return vars, alpha
@@ -14,6 +14,14 @@ function line_search(vars::class_variables, direction::class_variables)
 		throw(e)
 	end
 end
+
+#function merit_function_derivative()
+#
+#end
+
+#function merit_function(newt::class_homogeneous_newton)
+#
+#end
 
 function maximum_step(vars::class_variables, direction::class_variables)
 	try
