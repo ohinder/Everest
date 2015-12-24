@@ -21,15 +21,22 @@ let
   MPI.Finalize();
 end
 
+using MPI
+x=1+1
+
+import MUMPS # needs to be intialized before Ipopt don't understand why
 MPI.Init();
-mumps = Mumps{Float64}(mumps_unsymmetric, default_icntl, default_cntl64	);  # Real, general unsymmetric
+cntl = MUMPS.default_icntl;
+cntl[4] = 1;
+var_mumps = MUMPS.Mumps{Float64}(MUMPS.mumps_unsymmetric, cntl, MUMPS.default_cntl64	);  # Real, general unsymmetric
 A = sparse(rand(4,4)); rhs = rand(4);       # Happens on all cores
-associate_matrix(mumps, A);
-factorize(mumps);
-associate_rhs(mumps, rhs);
-solve(mumps);
-x = get_solution(mumps);
-finalize(mumps);
+MUMPS.associate_matrix(var_mumps, A);
+MUMPS.factorize(var_mumps);
+MUMPS.associate_rhs(var_mumps, rhs);
+MUMPS.solve(var_mumps);
+x_sol = MUMPS.get_solution(var_mumps);
+println(var_mumps.infog[12])
+MUMPS.finalize(var_mumps);
 MPI.Finalize();
 
 Pkg.update()

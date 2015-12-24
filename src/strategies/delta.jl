@@ -75,15 +75,20 @@ function iterative_trust_region!(newt::abstract_newton_direction, vars::class_va
               inertia = update_newton_diag!(newt, vars, settings);
               if inertia
                   form_woodbury!(newt, vars)
-                  if compute_newton_direction!(newt, vars, class_theta(0.99,0.5,0.5));
-                      alpha_max = maximum_step(vars, newt.direction);
+									
+									try
+		                  compute_newton_direction!(newt, vars, class_theta(0.99,0.5,0.5));
+		                  alpha_max = maximum_step(vars, newt.direction);
 
-                      val = abs(log(alpha_max) - log(target));
-                      if best_val > val
-                          best_val = val;
-                          best_δ = δ;
-                      end
-                  end
+		                  val = abs(log(alpha_max) - log(target));
+		                  if best_val > val
+		                      best_val = val;
+		                      best_δ = δ;
+		                  end
+									catch e
+											warn(e.msg)
+											warn("computation skipped")
+									end
               end
           end
 

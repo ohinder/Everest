@@ -122,4 +122,3 @@ function trivial_test(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float64,1}, c:
 		throw(e)
 	end
 end
-

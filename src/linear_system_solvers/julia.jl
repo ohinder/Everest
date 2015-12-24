@@ -3,17 +3,17 @@ type linear_solver_JULIA <: abstract_linear_system_solver
 	_factor # TO DO, give type
 
 	# options
-	sym::Int64
+	sym::Symbol
 
   function linear_solver_JULIA()
       return new();
   end
 end
 
-function ls_factor(solver::linear_solver_JULIA, n::Int64, m::Int64)
-			if solver.sym == 0
+function ls_factor!(solver::linear_solver_JULIA, n::Int64, m::Int64)
+			if solver.sym == :unsymmetric
 				 solver._factor = lufact(solver._SparseMatrix);
-			elseif solver.sym == 1
+			elseif solver.sym == :definite
 				solver._factor = cholfact(solver._SparseMatrix);
 			else
 				error("this.options.sym = " * string(solver.sym) * " not supported")

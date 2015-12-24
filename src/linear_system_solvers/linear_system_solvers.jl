@@ -2,9 +2,15 @@ abstract abstract_linear_system_solver;
 
 include("julia.jl")
 include("matlab.jl")
+include("mumps.jl")
 
-function initialize!(solver::abstract_linear_system_solver, SparseMatrix::SparseMatrixCSC{Float64,Int64})
+function initialize!(solver::abstract_linear_system_solver, SparseMatrix::SparseMatrixCSC{Float64,Int64}, sym::Symbol)
 		solver._SparseMatrix = SparseMatrix;
+		solver.sym = sym
+end
+
+function finalize!(solver::abstract_linear_system_solver)
+
 end
 
 function inertia_status(pos_eigs::Int64, neg_eigs::Int64, zero_eigs::Int64, num_vars::Int64, num_constraints::Int64)

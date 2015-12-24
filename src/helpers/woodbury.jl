@@ -32,9 +32,33 @@ function evaluate(W::woodbury_identity, sol::Array{Float64,1})
     return W.factored_A._SparseMatrix * sol + W.U * (W.V * sol)
 end
 
+function rel_error(W::woodbury_identity, rhs::Array{Float64,1}, sol::Array{Float64,1})
+    return norm(evaluate(W, sol) - rhs,1)/norm(rhs,1);
+end
+
 function ls_solve(W::woodbury_identity, rhs::Array{Float64,1})
+  try
     my_temp = ls_solve(W.factored_A, rhs)
-    return (my_temp - W.invA_U * (W.factored_capacitance_matrix \ (W.V * my_temp)))
+    sol = (my_temp - W.invA_U * (W.factored_capacitance_matrix \ (W.V * my_temp)))
+
+    # catch errors
+    tol = 1e-6;
+    err = rel_error(W, rhs, sol[:]) # why is this rel error?
+    if err > tol
+        warn("numerical instability using Woodbury, using direct factorization instead of woodbury.")
+        sol = ls_solve_direct(W, rhs)
+        err = rel_error(W, rhs, sol)
+
+        if (err > tol)
+            error("numerical stability using direct factorization, computation skipped")
+        end
+    end
+
+    return sol
+  catch e
+      println("ERROR ls_solve")
+      throw(e)
+  end
 end
 
 function ls_solve_direct(W::woodbury_identity, rhs::Array{Float64,1}) # if there is numerical errors

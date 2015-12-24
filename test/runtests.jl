@@ -79,7 +79,7 @@ begin
 
         # test newton direction
 
-
+        start_advanced_timer()
         begin
             newt = class_homogeneous_newton();
             initialize_newton!(newt, qp, vars, settings)
@@ -131,7 +131,7 @@ begin
             hybrid_mu_strategy(newt, vars, settings, settings.delta_min)
         end
 
-
+        pause_advanced_timer()
 
 
         begin
@@ -156,6 +156,3 @@ begin
 
   include("basic_tests.jl")
 end
-
-
-

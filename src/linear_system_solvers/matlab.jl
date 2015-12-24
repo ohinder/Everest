@@ -4,7 +4,7 @@ type linear_solver_MATLAB <: abstract_linear_system_solver
   _SparseMatrix::SparseMatrixCSC{Float64,Int64}
 
 	# options
-	sym::Int64
+	sym::Symbol
 
   function linear_solver_MATLAB()
       # start matlab session
@@ -16,7 +16,7 @@ type linear_solver_MATLAB <: abstract_linear_system_solver
   end
 end
 
-function ls_factor(solver::linear_solver_MATLAB, n::Int64, m::Int64)
+function ls_factor!(solver::linear_solver_MATLAB, n::Int64, m::Int64)
 			sparse_matrix = solver. _SparseMatrix
 			@mput sparse_matrix
 
@@ -30,18 +30,6 @@ function ls_factor(solver::linear_solver_MATLAB, n::Int64, m::Int64)
 			return inertia_status(pos_eigs, neg_eigs, zero_eigs, n, m)
 end
 
-function ls_solve!(solver::linear_solver_MATLAB, my_rhs::Array{Float64,1}, my_sol::Array{Float64,1})
-      @mput my_rhs
-
-      @matlab begin
-        mat_solution = mat_S * ( mat_P* (mat_L'\ (mat_D\ (mat_L\ (mat_P' * ( mat_S * my_rhs ) ) ) ) ) );
-      end
-
-      @mget mat_solution
-
-      my_sol[1:length(my_sol)] =  mat_solution;
-end
-
 function ls_solve(solver::linear_solver_MATLAB, my_rhs::AbstractArray)
       @mput my_rhs
 
@@ -53,4 +41,3 @@ function ls_solve(solver::linear_solver_MATLAB, my_rhs::AbstractArray)
 
       return mat_solution;
 end
-

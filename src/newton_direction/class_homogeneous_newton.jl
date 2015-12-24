@@ -28,7 +28,7 @@ function initialize_newton!(newt::class_homogeneous_newton, nlp_eval::internal_A
 				newt.direction = class_variables(n(vars),m(vars));
 
 				newt.linear_system_solver = settings.linear_system_solver;
-				initialize!(newt.linear_system_solver, newt.K);
+				initialize!(newt.linear_system_solver, newt.K, :symmetric);
 
         newt.nlp_vals = class_nlp_cache();
 
@@ -119,7 +119,7 @@ end
 
 function factorize_newton!(newt::class_homogeneous_newton, vars::class_variables)
       start_advanced_timer("Factor");
-      inertia = ls_factor(newt.linear_system_solver, n(vars) + 1, m(vars));
+      inertia = ls_factor!(newt.linear_system_solver, n(vars) + 1, m(vars));
       pause_advanced_timer("Factor");
 
       newt.W_updated = false;
@@ -177,19 +177,22 @@ function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_v
 
         tol = 1e-6
         sol = false;
-        try
-          sol = ls_solve(newt.W, rhs);
-          err = norm(evaluate(newt.W, sol) - rhs,1)/norm(rhs,1);
-          @assert(err < tol)
-        catch e
-            warn("numerical instability using Woodbury, using direct factorization instead of woodbury.")
-            sol = ls_solve_direct(newt.W, rhs)
-            err = norm(evaluate(newt.W, sol) - rhs, 1)/norm(rhs,1);
-            if (err > tol)
-                warn("numerical stability using direct factorization, computation skipped")
-                return false
-            end
-        end
+
+				sol = ls_solve(newt.W, rhs);
+				#err = norm(evaluate(newt.W, sol) - rhs,1)/norm(rhs,1);
+
+        #try
+        #  @assert(err < tol)
+        #catch e
+				#		@show err
+        #    warn("numerical instability using Woodbury, using direct factorization instead of woodbury.")
+        #    sol = ls_solve_direct(newt.W, rhs)
+        #    err = norm(evaluate(newt.W, sol) - rhs, 1)/norm(rhs,1);
+        #    if (err > tol)
+        #        warn("numerical stability using direct factorization, computation skipped")
+        #        return false
+        #    end
+        #end
         pause_advanced_timer("Solve");
 
         #println(full(newt.K_true))
@@ -219,4 +222,3 @@ function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_v
 function mu(newton_direction::class_homogeneous_newton, vars::class_variables)
     return (dot(s(vars),x(vars)) + dot(tau(vars),kappa(vars)))/(n(vars) + 1)
 end
-

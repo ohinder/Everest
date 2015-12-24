@@ -42,10 +42,11 @@ type class_settings
 		this.unbounded_value = 1e4;
 
 		# algorithm parameters
-		this.diagonal_modification = 1e-10 #1e-10;
+		this.diagonal_modification = 1e-9 #1e-10;
 
 		# algorithm strategies
-		this.linear_system_solver = linear_solver_MATLAB();
+		#this.linear_system_solver = linear_solver_MATLAB();
+		this.linear_system_solver = linear_solver_MUMPS();
 		#this.newton_solver = class_newton_hsd();
 		this.newton_solver = class_homogeneous_newton();
 

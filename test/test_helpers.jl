@@ -1,14 +1,13 @@
 function test_woodbury()
     len = 500;
     ls_solver_julia = linear_solver_JULIA();
-    ls_solver_julia.sym = 0;
     solver = ls_solver_julia;
     mat = sparse(rand(len,len));
-    initialize!(solver,mat);
+    initialize!(solver, mat, :unsymmetric);
 
     @test solver._SparseMatrix == mat
 
-    inertia = ls_factor(solver, len, 0)
+    inertia = ls_factor!(solver, len, 0)
     @test inertia == 1
 
     sol = 1.0*zeros(len);
