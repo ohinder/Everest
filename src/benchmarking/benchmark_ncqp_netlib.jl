@@ -1,4 +1,4 @@
-export test_problem, tridiagonal
+export test_problem_ncqp, tridiagonal
 
 #
 # test the linear program solver on a simple problem

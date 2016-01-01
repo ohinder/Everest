@@ -18,15 +18,28 @@ function get_netlib_problem(file_name::String)
 end
 
 
-using MATLAB
+using MAT
 function get_netlib_problem(dir::String, file_name::String)
+  #= USE JSON??
   @mput dir file_name
 	@matlab begin
     cd(dir)
     load(file_name)
   end
   @mget A b c
-	return A, b, c
+  =#
+
+
+  dir = dirname(@__FILE__)
+  file = matopen(dir * "/Problems/" * file_name)
+
+  A = read(file, "A") # note that this does NOT introduce a variable ``varname`` into scope
+  b = read(file,"b")[:]
+  c = read(file,"c")[:]
+
+  close(file)
+
+  return A, b, c
 end
 
 function test_homogeneous_algorithm(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float64,1}, c::Array{Float64,1}, settings::class_settings)
