@@ -14,15 +14,8 @@ Where f(x) is any smooth non-convex function.
 
 # How to install
 
-1. Install at least one of the following package manually (the linear system solver):
+1. Install the linear solver [MUMPS.jl](https://github.com/JuliaOptimizers/MUMPS.jl). Currently this package is only supported in Linux or Mac OS X. If you want to add an new linear solver you can do so in this [directory](https://github.com/ohinder/Everest.jl/tree/master/src/linear_system_solvers).
 
-[MATLAB.jl](https://github.com/JuliaLang/MATLAB.jl)
-
-[MUMPS.jl](https://github.com/JuliaOptimizers/MUMPS.jl)
-
-MUMPS is preferable, since it is open source and is significantly faster than using the MATLAB LBL factorization (less overhead). If you want to add an new linear solver you can do so in this [directory](https://github.com/ohinder/Everest.jl/tree/master/src/linear_system_solvers).
-
-Currently these packages are only supported in Linux or Mac OS X.
 
 2. Run the following code in julia:
 
