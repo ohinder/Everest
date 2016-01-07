@@ -1,4 +1,5 @@
 using Base.Test
+using FactCheck
 # test linear system solvers
 
 function test_linear_solver(solver::abstract_linear_system_solver, sym::Symbol)
@@ -26,7 +27,7 @@ function test_linear_solver_inertia(solver::abstract_linear_system_solver, sym::
    @test solver._SparseMatrix == mat
 
    inertia = ls_factor!(solver, n, m)
-   @test inertia == correct_inertia
+   @fact inertia --> correct_inertia
 end
 
 function test_linear_solver_accuracy(solver::abstract_linear_system_solver, sym::Symbol, mat::SparseMatrixCSC{Float64,Int64}, rhs::AbstractArray, n::Int64, m::Int64)
@@ -36,30 +37,33 @@ function test_linear_solver_accuracy(solver::abstract_linear_system_solver, sym:
 
   #sol = ls_solve(solver,rhs);
   err = norm(mat*sol - rhs,1)/norm(sol,1)
-  @test err < 1e-6
-  @show err
+  @fact err --> less_than(1e-6)
 end
 
-# test mumps solver
-begin
-  ls_solver_mumps = linear_solver_MUMPS();
-  test_linear_solver( ls_solver_mumps, :symmetric )
-  #MPI.Finalize()
-end
+facts("Linear solvers") do
 
-# test julia solver
-begin
-  # test julia lu factor
-  ls_solver_julia = linear_solver_JULIA();
-  test_linear_solver( ls_solver_julia , :unsymmetric )
+  # test mumps solver
+  context("MUMPS") do
+    ls_solver_mumps = linear_solver_MUMPS();
+    test_linear_solver( ls_solver_mumps, :symmetric )
+    #MPI.Finalize()
+  end
 
-  # test julia cholesky factor
-  ls_solver_julia = linear_solver_JULIA();
-  test_linear_solver( ls_solver_julia, :definite )
+  # test julia solver
+  context("julia") do
+    # test julia lu factor
+    ls_solver_julia = linear_solver_JULIA();
+    test_linear_solver( ls_solver_julia , :unsymmetric )
+
+    # test julia cholesky factor
+    ls_solver_julia = linear_solver_JULIA();
+    test_linear_solver( ls_solver_julia, :definite )
+  end
+
 end
 
 # test matlab ldl solver
-begin
-  ls_solver_matlab = linear_solver_MATLAB();
-  test_linear_solver( ls_solver_matlab, :symmetric )
-end
+#context("matlab") do
+#  ls_solver_matlab = linear_solver_MATLAB();
+#  test_linear_solver( ls_solver_matlab, :symmetric )
+#end

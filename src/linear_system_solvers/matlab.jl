@@ -9,7 +9,6 @@ type linear_solver_MATLAB <: abstract_linear_system_solver
   function linear_solver_MATLAB()
       # start matlab session
       @matlab begin
-
       end
 
       return new();

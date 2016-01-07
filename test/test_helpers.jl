@@ -24,8 +24,11 @@ function test_woodbury()
 
     err = norm((mat + U * V) * sol - rhs)
     @show err
-    @test err < 1e-10
+    @fact err --> less_than(1e-10)
 end
 
-
-test_woodbury();
+facts("helpers") do
+  context("woodbury") do
+      test_woodbury();
+  end
+end

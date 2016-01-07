@@ -1,4 +1,5 @@
-using my_advanced_timer
+using advanced_timer
+using MATLAB
 
 include("linear_system_solvers/linear_system_solvers.jl")
 include("core/core.jl")
@@ -9,6 +10,3 @@ include("line_search/line_search.jl")
 include("strategies/strategies.jl")
 include("homogeneous.jl")
 include("benchmarking/benchmarking.jl")
-
-
-

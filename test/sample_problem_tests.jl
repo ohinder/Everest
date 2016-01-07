@@ -1,6 +1,8 @@
-# test the linear program solver on a simple problem
-#
+# TO DO:
+# - test final values
+# - using fact check
 
+# test the linear program solver on a simple problem
 
 function trivial_lp(settings::class_settings)
 	# trivial_test(A, b, c,  correct_status, problem_name, verbose)
@@ -82,11 +84,3 @@ trivial_qp(settings);
 
 #trivial_lp(settings);
 #trivial_qp(settings);
-
-
-
-
-
-
-
-
