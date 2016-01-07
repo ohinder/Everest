@@ -19,18 +19,18 @@ Where f(x) is any smooth non-convex function.
 
 2. Run the following code in julia:
 
-```julia
-Pkg.add("JuMP")
-Pkg.add("MAT")
-Pkg.clone("https://github.com/ohinder/advanced_timer.jl.git")
-Pkg.clone("https://github.com/ohinder/Everest.jl.git")
-```
+  ```julia
+  Pkg.add("JuMP")
+  Pkg.add("MAT")
+  Pkg.clone("https://github.com/ohinder/advanced_timer.jl.git")
+  Pkg.clone("https://github.com/ohinder/Everest.jl.git")
+  ```
 
-33. To test your installation run in julia:
+3. To test your installation run in julia:
 
-```julia
-using Everest
-Pkg.test("Everest")
-```
+  ```julia
+  using Everest
+  Pkg.test("Everest")
+  ```
 
 # How to use
