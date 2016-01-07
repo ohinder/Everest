@@ -26,7 +26,7 @@ Pkg.clone("https://github.com/ohinder/advanced_timer.jl.git")
 Pkg.clone("https://github.com/ohinder/Everest.jl.git")
 ```
 
-3. To test your installation run in julia:
+33. To test your installation run in julia:
 
 ```julia
 using Everest
