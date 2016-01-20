@@ -108,11 +108,11 @@ function solve_with_JuMP(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float64,1},
 	end
 end
 
-function trivial_test(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float64,1}, c::Array{Float64,1}, correct_status::Int64, problem_name = "", settings::class_settings = class_settings(), verbose = false)
+function trivial_test(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float64,1}, c::Array{Float64,1}, correct_status::Symbol, problem_name = "", settings::class_settings = class_settings(), verbose = false)
 	return trivial_test(A, b, c, spzeros(length(c),length(c)), correct_status, problem_name, settings, verbose)
 end
 
-function trivial_test(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float64,1}, c::Array{Float64,1}, Q::SparseMatrixCSC{Float64,Int64}, correct_status::Int64, problem_name = "", settings::class_settings = class_settings(), verbose = false)
+function trivial_test(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float64,1}, c::Array{Float64,1}, Q::SparseMatrixCSC{Float64,Int64}, correct_status::Symbol, problem_name = "", settings::class_settings = class_settings(), verbose = false)
 	try
 		#settings.linear_system_solver = linear_solver_MATLAB();
 		#settings.linear_system_solver.options.sym = 0;

@@ -15,7 +15,6 @@ type class_quadratic_program <: internal_AbstractNLPEvaluator
   _c::Array{Float64,1}
   _Q::SparseMatrixCSC{Float64,Int64}
 
-
 	function class_quadratic_program(A::SparseMatrixCSC{Float64,Int64},b::Array{Float64,1},c::Array{Float64,1})
     (m, n) = size(A)
 		return new(n,m,A,b,c,spzeros(n,n));

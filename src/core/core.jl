@@ -3,6 +3,8 @@ abstract internal_AbstractNLPEvaluator;
 include("class_variables.jl")
 include("class_nlp_cache.jl")
 include("class_quadratic_program.jl")
+#include("class_qcqp.jl")
+include("class_nlp.jl")
 include("class_nlo.jl")
 include("class_settings.jl")
 

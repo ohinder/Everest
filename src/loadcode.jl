@@ -1,5 +1,7 @@
-using advanced_timer
-using MATLAB
+info("Loading required packages")
+using advanced_timer, MATLAB, MUMPS
+
+info("Loading julia code")
 
 include("linear_system_solvers/linear_system_solvers.jl")
 include("core/core.jl")

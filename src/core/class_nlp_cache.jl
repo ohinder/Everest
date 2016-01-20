@@ -12,9 +12,9 @@ type class_nlp_cache
     val_gradc::Array{Float64,1}
     val_b::Array{Float64,1}
 
-   function class_nlp_cache()
-      return new();
-  end
+    function class_nlp_cache()
+        return new();
+    end
 end
 
 
@@ -26,14 +26,17 @@ function update_nlp_cache!(nlp_vals::class_nlp_cache, nlp_eval::internal_Abstrac
         val_x_scaled = x_scaled(vars);
         val_y_scaled = y_scaled(vars);
 
+        start_advanced_timer("Function_evaluation")
+
         nlp_vals.val_c = internal_eval_c( nlp_eval, val_x_scaled )
         nlp_vals.val_a = internal_eval_a( nlp_eval, val_x_scaled )
         nlp_vals.val_jac_a = internal_eval_jac_a( nlp_eval, val_x_scaled )
         nlp_vals.val_hesslag_prod = internal_eval_hesslag_prod( nlp_eval, val_x_scaled, val_y_scaled )
         nlp_vals.val_gradlag = internal_eval_gradlag( nlp_eval, val_x_scaled, val_y_scaled )
-
         nlp_vals.val_gradc = internal_eval_gradc( nlp_eval, val_x_scaled )
         nlp_vals.val_b = internal_eval_b( nlp_eval, val_x_scaled )
+
+        pause_advanced_timer("Function_evaluation")
     catch e
         println("class_nlp_cache/update_nlp_cache!")
         throw(e)

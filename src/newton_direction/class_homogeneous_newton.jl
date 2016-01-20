@@ -1,5 +1,7 @@
 type class_homogeneous_newton <: abstract_newton_direction
 	delta::Float64
+	delta_mod::Array{Float64,1}
+
 	direction::class_variables
 	residuals::class_homogeneous_residuals
   nlp_vals::class_nlp_cache
@@ -32,11 +34,13 @@ function initialize_newton!(newt::class_homogeneous_newton, nlp_eval::internal_A
 
         newt.nlp_vals = class_nlp_cache();
 
+
+        newt.delta = 0.0;
+				update_delta_mod!(newt, vars)
+
 				newt.residuals = class_homogeneous_residuals();
         update_residuals!(newt.residuals, nlp_eval, vars, newt);
         newt.W_updated = false;
-
-        newt.delta = 0.0;
 			catch e
 				println("ERROR in class_homogeneous_newton.intialize")
 				throw(e)
@@ -87,12 +91,18 @@ function update_newton!(newt::class_homogeneous_newton, vars::class_variables, s
   end
 end
 
+function update_delta_mod!(newt::class_homogeneous_newton, vars::class_variables)
+		newt.delta_mod = [newt.delta * ones(n(vars)); newt.delta * norm(x_scaled(vars),2)^2]
+end
+
 function update_newton_diag!(newt::class_homogeneous_newton, vars::class_variables, settings::class_settings)
+		update_delta_mod!(newt, vars)
+
     H = newt.nlp_vals.val_hesslag_prod;
-    D_x_diag = diag(H) + s(vars) ./ x(vars) + newt.delta
+    D_x_diag = diag(H) + s(vars) ./ x(vars) +	newt.delta_mod[1:n(vars)]
 
     val_x_scaled = x_scaled(vars);
-    D_g = val_x_scaled' * H * val_x_scaled + kappa(vars) / tau(vars) + newt.delta * norm(val_x_scaled,2)^2;
+    D_g = val_x_scaled' * H * val_x_scaled + kappa(vars) / tau(vars) + newt.delta_mod[n(vars)+1]
     diag_mod = [ D_x_diag; D_g; -settings.diagonal_modification*ones(m(vars))];
 
     for i = 1:size(newt.K,1)

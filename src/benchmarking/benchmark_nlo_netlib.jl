@@ -16,7 +16,7 @@ function solve_with_JuMP_sqrt(A::SparseMatrixCSC{Float64,Int64}, b::Array{Float6
 	n, k = size(A)
 
 	@defVar(model, x[1:k] >= 0)
-	@setNLObjective( model, Min, sum{sqrt(x[i]+1), i=1:k})
+	@setNLObjective( model, Min, sum{log(x[i]+1), i=1:k})
 
 
 	#@addConstraint(model, A*x .== b)
@@ -52,13 +52,13 @@ function test_problem_nlo(name::String)
 	println("Non-zeros: ", length(nonzeros(A)))
 	settings = class_settings();
 
-	println("=================== Linear system solver is matlab ldl ==================")
-	settings.linear_system_solver = linear_solver_MATLAB();
+	println("=================== Linear system solver is MUMPS ==================")
+	settings.linear_system_solver = linear_solver_MUMPS();
 
 	settings.newton_solver = class_homogeneous_newton();
 
   qp = class_quadratic_program(A, b, c, Q);
-  nlo = class_nlo(A, b, nl_sqrt())
+  nlo = class_nlo(A, b, nl_log())
   homogeneous_algorithm(nlo,settings)
   #trivial_test(A, b, c, Q, 1, file_name, settings, true);
 

@@ -35,7 +35,7 @@ function terminate_algorithm(vars::class_variables, residuals::class_homogeneous
 		if residuals.scaled_mu < settings.gap_tol
 			if kappa(vars)/tau(vars) < settings.kappa_tau_tol
 				if residuals.primal_norm < settings.primal_tol && residuals.dual_norm < settings.dual_tol
-					return 1;
+					return :locally_optimal; # optimal solution!
 				end
 			end
 
@@ -43,9 +43,9 @@ function terminate_algorithm(vars::class_variables, residuals::class_homogeneous
 				#println( -(residuals.b' * vars.y())[1], " ", (vars.x()' * residuals.c)[1])
 				#println("res:", residuals.primal_infeas_norm, " ", residuals.dual_infeas_norm)
 				if residuals.primal_infeas_sign == 1 && residuals.primal_infeas_norm < settings.primal_infeas_tol
-					return 2;
+					return :locally_primal_infeasible; # infeasible!
 				elseif residuals.dual_infeas_sign == 1 && residuals.dual_infeas_norm < settings.dual_infeas_tol && residuals.val_c < -settings.unbounded_value
-					return 3;
+					return :locally_dual_infeasible; # unbounded!
         end
 			end
 		end
@@ -64,7 +64,30 @@ function homogeneous_algorithm(nlp::internal_AbstractNLPEvaluator, settings::cla
     homogeneous_algorithm(nlp, vars, settings)
 end
 
+#type high_level_strategy
+#		delta_strategy::Function
+#		theta_strategy::Function
+#  	newton_solver
+#		line_search
+#end
+
+function my_strategy_function(newton_solver::class_homogeneous_newton, nlp::internal_AbstractNLPEvaluator, vars::class_variables, settings::class_settings)
+		new_delta, num_facs = ipopt_style_inertia_correction!(newton_solver, vars, settings)
+		#used_delta, num_facs = iterative_trust_region!(newton_solver, vars, settings)
+
+		#vars, alpha, gamma = predictor_corrector(newton_solver, vars, settings)
+		#vars, alpha, gamma = simple_gamma_strategy(newton_solver, vars, settings)
+		vars, alpha, gamma = hybrid_mu_strategy(newton_solver, nlp, vars, settings, new_delta)
+		#@assert(alpha >= 0.5)
+
+		return vars, alpha, gamma, new_delta, num_facs
+end
+
 function homogeneous_algorithm(nlp::internal_AbstractNLPEvaluator, vars::class_variables, settings::class_settings)
+			homogeneous_algorithm(nlp, vars, settings, my_strategy_function)
+end
+
+function homogeneous_algorithm(nlp::internal_AbstractNLPEvaluator, vars::class_variables, settings::class_settings, strategy_function::Function)
 	alpha = 0.0;
   it = 0;
 
@@ -87,25 +110,21 @@ function homogeneous_algorithm(nlp::internal_AbstractNLPEvaluator, vars::class_v
 		num_trials = 0;
 		total_factorizations = 0;
 
-		print_if("It | alpha | gamma  || tau   | kappa  ||  mu  |  gap  | primal | dual | f(x/tau)|| delta norm(d) #ls #fac", settings.verbose)
+		print_if("It | alpha | gamma  || tau   | kappa  ||  mu  |  gap  | primal | dual | f(x/tau)|| delta  norm(d) #ls #fac", settings.verbose)
 		display_progress(it, alpha, gamma, newton_solver.residuals, vars, newton_solver.direction, newton_solver.delta, num_trials, 0, settings);
 
     new_delta = 0.0;
 
 		for it = 1:settings.max_it
       newton_solver.delta = new_delta;
-      new_delta, num_facs = ipopt_style_inertia_correction!(newton_solver, vars, settings)
-      #used_delta, num_facs = iterative_trust_region!(newton_solver, vars, settings)
+
+			# this is where we choose delta and theta etc
+			# ipopt inertia correction is a typical strategy for theta
+			# typical strategies for theta include predictor-corrector
+			vars, alpha, gamma, new_delta, num_facs = strategy_function(newton_solver, nlp, vars, settings)
 			total_factorizations += num_facs;
 
-      #vars, alpha, gamma = predictor_corrector(newton_solver, vars, settings)
-      #vars, alpha, gamma = simple_gamma_strategy(newton_solver, vars, settings)
-			vars, alpha, gamma = hybrid_mu_strategy(newton_solver, vars, settings, new_delta)
-      #@assert(alpha >= 0.5)
-
-      start_advanced_timer("residuals");
 			update_residuals!(newton_solver.residuals, nlp, vars, newton_solver);
-      pause_advanced_timer("residuals");
 
 			display_progress(it, alpha, gamma, newton_solver.residuals, vars, newton_solver.direction, newton_solver.delta, num_trials, num_facs, settings);
 
@@ -136,4 +155,3 @@ function homogeneous_algorithm(nlp::internal_AbstractNLPEvaluator, vars::class_v
 		throw(e)
 	end
 end
-

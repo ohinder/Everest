@@ -1,14 +1,38 @@
-function line_search(vars::class_variables, direction::class_variables)
+function line_search(newton_solver::abstract_newton_direction, nlp::internal_AbstractNLPEvaluator, intial_point::class_variables, direction::class_variables, theta::class_theta)
 	try
-		#GLOBAL_timer::class_algorithm_timer
-		#GLOBAL_timer.start("Line-search")
+		alpha_max = maximum_step(intial_point, direction);
+		damper = 0.01 #mu(newton_solver, intial_point))
+		alpha = min(1.0,(1 -  damper) * alpha_max);
 
-		vars = deepcopy(vars)
-		alpha_max = maximum_step(vars, direction);
-		alpha = 1.0*min(1.0,0.95*alpha_max);
-		move!(vars, alpha, direction);
+		res = newton_solver.residuals
 
-		return vars, alpha
+		merit_function_diff = merit_function_derivative(res, theta)
+		#finite_difference_merit_function(res, theta, nlp, newton_solver, intial_point, direction)
+
+		orginal_merit_func = current_merit_function(res)
+
+		return_point = None
+
+		for i = 1:100
+				new_vars = deepcopy(intial_point)
+				move!(new_vars, alpha, direction);
+
+				# why do I need to deep copy the residuals ???????
+				new_merit_func = proximal_merit_function!(deepcopy(res), nlp, new_vars, newton_solver, intial_point)
+				actual_gain = orginal_merit_func - new_merit_func
+
+				v = new_merit_func/orginal_merit_func
+
+				if actual_gain > 1e-4 * merit_function_diff * alpha
+						return new_vars, alpha, true, v
+				elseif alpha < 1e-5
+						return new_vars, alpha, false, v
+				end
+
+				alpha = 0.99 * alpha * max(alpha,0.01)
+		end
+
+		error("failure")
 	catch e
 		println("ERROR in line_search")
 		throw(e)

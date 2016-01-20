@@ -12,6 +12,8 @@ function qp_test()
     return class_quadratic_program(A, b, c, Q), A, b, c, Q;
 end
 
+settings = class_settings();
+
 facts("core") do
   ###############################
   # test class_variables
@@ -57,13 +59,62 @@ facts("core") do
       vars2 = class_variables(3,3);
       @fact_throws ErrorException validate_dimensions(qp, vars2)
   end
+
+  context("nlp") do
+      # - x - y
+
+      a = sparse([-2.0, -2.0, 0.0])
+      b = 0.0
+      P = spdiagm([0.0, 0.0, 0.0])
+      obj = nl_quad(a,P,b)
+
+      # x^2 + y^2 + s - 1
+      a = sparse([0.0, 0.0, -1.0])
+      P = spdiagm([2.0, 2.0, 0.0])
+      b = -4.0 #-4.0
+      constr1 = nl_quad(a,P,b)
+
+      nlp = class_nlp(3, obj, [constr1])
+
+      x_val = [1.0, 1.0, 0.0];
+
+      nlp.obj.value(x_val)
+      nlp.obj.gradient(x_val)
+      nlp.obj.hessian(x_val)
+
+      nlp.constraints[1].value(x_val)
+      nlp.constraints[1].gradient(x_val)
+      nlp.constraints[1].hessian(x_val)
+
+      y_val = [1.0]
+      internal_eval_c(nlp, x_val)
+      internal_eval_a(nlp, x_val)
+      internal_eval_jac_a(nlp, x_val)
+      internal_eval_hesslag_prod(nlp, x_val, y_val)
+      internal_eval_gradlag(nlp, x_val, y_val)
+      internal_eval_gradc(nlp, x_val)
+      internal_eval_b(nlp, x_val)
+
+      vars = class_variables(3,1);
+      status, vars = homogeneous_algorithm(nlp, vars, settings)
+      @show x_scaled(vars)
+
+      @show internal_eval_hesslag_prod(nlp, x(vars), y(vars))
+
+      @fact status --> :locally_optimal
+      @fact norm(x_scaled(vars) - [2.0,2.0,0.0]) --> less_than(1e-6)
+      @fact tau(vars) --> greater_than(0.1)
+      @fact 0.0 --> less_than(kappa(vars))
+      @fact kappa(vars) --> less_than(1e-6)
+  end
+
 end
 
 
 begin
+    start_advanced_timer()
     qp, A, b, c, Q = qp_test();
     nlp_vals = class_nlp_cache();
-    settings = class_settings();
     vars = class_variables(3,1);
     update_nlp_cache!(nlp_vals, qp, vars)
     validate_dimensions(qp, vars)
@@ -72,7 +123,6 @@ begin
     # test newton direction
     facts("newton direction") do
 
-      start_advanced_timer()
       begin
           newt = class_homogeneous_newton();
           initialize_newton!(newt, qp, vars, settings)
@@ -94,17 +144,6 @@ begin
 
   end
 
-  facts("line search") do
-    # test line search
-    begin
-        vars2= class_variables(5,3);
-        direction = class_variables(5,3);
-        x(direction, -x(vars2))
-        vars2, alpha = line_search(vars2, direction);
-        @fact alpha --> less_than(1)
-    end
-  end
-
   facts("strategies") do
       # test stratagies
 
@@ -116,31 +155,22 @@ begin
           @fact delta --> 0.0
           @fact number_of_factors --> 1
       end
-
-       # test theta heursitics
-      begin
-          predictor_corrector(newt, vars, settings)
-          simple_gamma_strategy(newt, vars, settings)
-          hybrid_mu_strategy(newt, vars, settings, settings.delta_min + 1.0)
-          hybrid_mu_strategy(newt, vars, settings, settings.delta_min)
-      end
-
-      pause_advanced_timer()
-
   end
 
-    #begin
-    #    vars = class_variables(3,1);
-    #    A = sparse(ones(1,3));
-    #    b = 3*ones(1);
-    #    c = [2.0, 0.0, 1.0];
-    #    qp = class_quadratic_program(A, b, c);
-    #    status, vars = homogeneous_algorithm(qp, vars, settings)
-    #    @fact norm(x_scaled(vars) - [0.0,3.0,0.0]) --> less_than(1e-6)
-    #    @fact tau(vars) --> greater_than(0.1)
-    #    @fact 0.0 --> less_than(kappa(vars))
-    #    @fact kappa(vars) --> less_than(1e-6)
-    #end
+  pause_advanced_timer()
+
+    begin
+        vars = class_variables(3,1);
+        A = sparse(ones(1,3));
+        b = 3*ones(1);
+        c = [2.0, 0.0, 1.0];
+        qp = class_quadratic_program(A, b, c);
+        status, vars = homogeneous_algorithm(qp, vars, settings)
+        @fact norm(x_scaled(vars) - [0.0,3.0,0.0]) --> less_than(1e-6)
+        @fact tau(vars) --> greater_than(0.1)
+        @fact 0.0 --> less_than(kappa(vars))
+        @fact kappa(vars) --> less_than(1e-6)
+    end
 
 
 end

@@ -3,6 +3,7 @@ type class_homogeneous_residuals <: abstract_residuals
 	r_D::Array{Float64,1}
 	r_P::Array{Float64,1}
 
+	r_norm::Float64
 	r_D_norm::Float64
 	r_G_norm::Float64
 	r_P_norm::Float64
@@ -29,14 +30,42 @@ type class_homogeneous_residuals <: abstract_residuals
   end
 end
 
+function finite_difference_merit_function(res::class_homogeneous_residuals, theta::class_theta, nlp, newton_solver, intial_point::class_variables, direction::class_variables)
+		new_vars = deepcopy(intial_point)
 
-function merit_function(res::class_homogeneous_residuals, newt::abstract_newton_direction)
+		alpha = 1e-4;
+		move!(new_vars, alpha, direction);
+		orginal_mf = current_merit_function(res)
+		val_mf = proximal_merit_function!(deepcopy(res), nlp, new_vars, newton_solver, intial_point);
 
+		finite_dif = (val_mf - orginal_mf)/alpha
+
+		computed_dif = merit_function_derivative(res, theta)
+
+		@show finite_dif, computed_dif
 end
 
+function merit_function_derivative(res::class_homogeneous_residuals, theta::class_theta)
+		return (theta.mu - 1.0) * res.mu  + (theta.dual - 1.0) * (res.r_G_norm + res.r_D_norm) + (theta.primal - 1.0) * res.r_P_norm;
+end
+
+function current_merit_function(res::class_homogeneous_residuals)
+		return res.mu + res.r_norm;
+end
+
+function proximal_merit_function!(res::class_homogeneous_residuals, nlp_eval::internal_AbstractNLPEvaluator, vars::class_variables, newt::abstract_newton_direction, intial_point::class_variables)
+		update_residuals!(res, nlp_eval, vars, newt, intial_point)
+		return current_merit_function(res)
+end
 
 function update_residuals!(res::class_homogeneous_residuals, nlp_eval::internal_AbstractNLPEvaluator, vars::class_variables, newt::abstract_newton_direction)
+		update_residuals!(res, nlp_eval, vars, newt, vars)
+end
+
+function update_residuals!(res::class_homogeneous_residuals, nlp_eval::internal_AbstractNLPEvaluator, vars::class_variables, newt::abstract_newton_direction, intial_point::class_variables)
 			try
+				start_advanced_timer("residuals");
+
         nlp_vals = newt.nlp_vals;
         update_nlp_cache!(nlp_vals, nlp_eval, vars)
 
@@ -48,13 +77,19 @@ function update_residuals!(res::class_homogeneous_residuals, nlp_eval::internal_
         val_kappa = kappa(vars);
         val_tau = tau(vars);
 
-				res.r_D = s(vars) - tau(vars) * nlp_vals.val_gradlag;
-				res.r_G = kappa(vars) + dot(nlp_vals.val_gradlag, x(vars)) + dot(nlp_vals.val_a, y(vars));
+
+				prox_mod_x = -newt.delta_mod[1:n(vars)] .* (x(vars) - x(intial_point))
+				res.r_D = s(vars) - tau(vars) * nlp_vals.val_gradlag + prox_mod_x;
+
+				prox_mod_tau = -newt.delta_mod[n(vars)+1] * (tau(vars) - tau(intial_point))
+				res.r_G = kappa(vars) + dot(nlp_vals.val_gradlag, x(vars)) + dot(nlp_vals.val_a, y(vars)) + prox_mod_tau;
+
 				res.r_P = -tau(vars) * nlp_vals.val_a;
 
 				res.r_D_norm = norm(res.r_D,1);
 				res.r_G_norm = abs(res.r_G);
 				res.r_P_norm = norm(res.r_P,1);
+				res.r_norm = res.r_D_norm + res.r_G_norm + res.r_P_norm
 
 				# other stuff
 				scale = kappa(vars) + tau(vars);
@@ -75,11 +110,10 @@ function update_residuals!(res::class_homogeneous_residuals, nlp_eval::internal_
 				res.primal_infeas_norm = norm(s(vars) + nlp_vals.val_jac_a' * y(vars),1)/abs(primal_infeas_obj);
  				res.dual_infeas_norm = norm(nlp_vals.val_a,1)/abs(dual_infeas_obj);
 
+				pause_advanced_timer("residuals");
         #println(res.dual_infeas_norm, norm(nlp_vals.val_a,1)/nlp_vals.val_c)
 			catch e
 				  println("ERROR in class_residuals.update")
 				  throw(e)
 			end
 end
-
-
