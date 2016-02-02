@@ -28,9 +28,6 @@ Where f(x) is any smooth non-convex function.
 
 3. Install CUTEst by following the instructions in [CUTEst.jl](https://github.com/JuliaOptimizers/CUTEst.jl)
 
-# CUTEst failed to build on 10.11.1
-# https://gist.github.com/c560944a3f10ba8f7afb
-
 4. To test your installation run in julia:
 
   ```julia
@@ -39,3 +36,6 @@ Where f(x) is any smooth non-convex function.
   ```
 
 # How to use
+
+
+to do ...
