@@ -58,7 +58,7 @@ function test_problem_nlo(name::String)
 	settings.newton_solver = class_homogeneous_newton();
 
   qp = class_quadratic_program(A, b, c, Q);
-  nlo = class_nlo(A, b, nl_log())
+  nlo = class_nlo(A, b, nl_log(length(c)))
   homogeneous_algorithm(nlo,settings)
   #trivial_test(A, b, c, Q, 1, file_name, settings, true);
 

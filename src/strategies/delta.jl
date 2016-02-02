@@ -75,7 +75,7 @@ function iterative_trust_region!(newt::abstract_newton_direction, vars::class_va
               inertia = update_newton_diag!(newt, vars, settings);
               if inertia
                   form_woodbury!(newt, vars)
-									
+
 									try
 		                  compute_newton_direction!(newt, vars, class_theta(0.99,0.5,0.5));
 		                  alpha_max = maximum_step(vars, newt.direction);

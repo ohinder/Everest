@@ -45,18 +45,6 @@ function finite_difference_merit_function(res::class_homogeneous_residuals, thet
 		@show finite_dif, computed_dif
 end
 
-function merit_function_derivative(res::class_homogeneous_residuals, theta::class_theta)
-		return (theta.mu - 1.0) * res.mu  + (theta.dual - 1.0) * (res.r_G_norm + res.r_D_norm) + (theta.primal - 1.0) * res.r_P_norm;
-end
-
-function current_merit_function(res::class_homogeneous_residuals)
-		return res.mu + res.r_norm;
-end
-
-function proximal_merit_function!(res::class_homogeneous_residuals, nlp_eval::internal_AbstractNLPEvaluator, vars::class_variables, newt::abstract_newton_direction, intial_point::class_variables)
-		update_residuals!(res, nlp_eval, vars, newt, intial_point)
-		return current_merit_function(res)
-end
 
 function update_residuals!(res::class_homogeneous_residuals, nlp_eval::internal_AbstractNLPEvaluator, vars::class_variables, newt::abstract_newton_direction)
 		update_residuals!(res, nlp_eval, vars, newt, vars)
@@ -84,7 +72,8 @@ function update_residuals!(res::class_homogeneous_residuals, nlp_eval::internal_
 				prox_mod_tau = -newt.delta_mod[n(vars)+1] * (tau(vars) - tau(intial_point))
 				res.r_G = kappa(vars) + dot(nlp_vals.val_gradlag, x(vars)) + dot(nlp_vals.val_a, y(vars)) + prox_mod_tau;
 
-				res.r_P = -tau(vars) * nlp_vals.val_a;
+				prox_mod_y = - newt.delta_mod[(n(vars)+2):(n(vars) + 1 + m(vars))] .* (y(vars) - y(intial_point))
+				res.r_P = -tau(vars) * nlp_vals.val_a + prox_mod_y;
 
 				res.r_D_norm = norm(res.r_D,1);
 				res.r_G_norm = abs(res.r_G);

@@ -12,8 +12,8 @@ function dd_sum_sqrt(x::Array{Float64,1})
     return spdiagm(-0.25 * (x+1).^(-1.5))
 end
 
-function nl_sqrt()
-    return class_nl_function(sum_sqrt,d_sum_sqrt,dd_sum_sqrt);
+function nl_sqrt(num_var::Int64)
+    return class_nl_function(num_var,sum_sqrt,d_sum_sqrt,dd_sum_sqrt);
 end
 
 # LOG function
@@ -29,8 +29,8 @@ function dd_sum_log(x::Array{Float64,1})
     return spdiagm(-(x+1).^(-2.0))
 end
 
-function nl_log()
-    return class_nl_function(sum_log,d_sum_log,dd_sum_log);
+function nl_log(num_var::Int64)
+    return class_nl_function(num_var::Int64,sum_log,d_sum_log,dd_sum_log);
 end
 
 # Quadratic
@@ -48,5 +48,12 @@ function nl_quad(c::AbstractArray, Q::SparseMatrixCSC{Float64,Int64}, b::Float64
         return Q
     end
 
-    return class_nl_function(value, gradient, hessian)
+    return class_nl_function(length(c), value, gradient, hessian)
+end
+
+function sphere_function(center_point::Float64,radius::Float64)
+    b = dot(center_point,center_point) - radius
+    c = -2 * center_point
+
+    return nl_quad(c, speye(length(c)), b)
 end

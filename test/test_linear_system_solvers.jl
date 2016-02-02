@@ -3,6 +3,7 @@ using FactCheck
 # test linear system solvers
 
 function test_linear_solver(solver::abstract_linear_system_solver, sym::Symbol)
+    start_advanced_timer()
     n = 40;
     mat = speye(n)
     mat = mat + mat'
@@ -20,6 +21,7 @@ function test_linear_solver(solver::abstract_linear_system_solver, sym::Symbol)
     test_linear_solver_accuracy(solver, sym, mat, rhs, 38, 2)
 
     finalize!(solver)
+    pause_advanced_timer()
 end
 
 function test_linear_solver_inertia(solver::abstract_linear_system_solver, sym::Symbol, mat::SparseMatrixCSC{Float64,Int64}, correct_inertia::Int64, n::Int64, m::Int64)

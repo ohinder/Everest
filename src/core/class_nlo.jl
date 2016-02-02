@@ -1,13 +1,3 @@
-type class_nl_function
-    value::Function
-    gradient::Function
-    hessian::Function
-
-    function class_nl_function(val::Function,grad::Function,hess::Function)
-        return new(val,grad,hess)
-    end
-end
-
 type class_nlo <: internal_AbstractNLPEvaluator
   # linear program with non-linear objective
   # min f(x)

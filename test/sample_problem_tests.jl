@@ -73,7 +73,6 @@ function trivial_ncqp(settings::class_settings)
 
 end
 
- include("../src/loadcode.jl");
 settings = class_settings();
 settings.max_it = 100;
 trivial_lp(settings);

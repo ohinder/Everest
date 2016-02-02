@@ -90,7 +90,8 @@ end
 function homogeneous_algorithm(nlp::internal_AbstractNLPEvaluator, vars::class_variables, settings::class_settings, strategy_function::Function)
 	alpha = 0.0;
   it = 0;
-
+	newton_solver = settings.newton_solver;
+	
 	try
     reset_advanced_timer()
     start_advanced_timer();
@@ -100,7 +101,7 @@ function homogeneous_algorithm(nlp::internal_AbstractNLPEvaluator, vars::class_v
 
 		validate_dimensions(nlp,vars)
 		#newton_solver = class_newton_solver2(nlp, vars, settings);
-		newton_solver = settings.newton_solver;
+
 
     initialize_newton!(newton_solver, nlp, vars, settings);
 
@@ -149,9 +150,10 @@ function homogeneous_algorithm(nlp::internal_AbstractNLPEvaluator, vars::class_v
 
 		return status, vars, it, total_factorizations
 	catch e
-		println("alpha = ", alpha)
-    println("iteration = ", it)
 		println("ERROR in homogeneous_algorithm")
+		@show newton_solver.delta
+		@show alpha
+		println("iteration = ", it)
 		throw(e)
 	end
 end

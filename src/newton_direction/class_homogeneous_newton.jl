@@ -36,7 +36,7 @@ function initialize_newton!(newt::class_homogeneous_newton, nlp_eval::internal_A
 
 
         newt.delta = 0.0;
-				update_delta_mod!(newt, vars)
+				update_delta_mod!(newt, vars, settings)
 
 				newt.residuals = class_homogeneous_residuals();
         update_residuals!(newt.residuals, nlp_eval, vars, newt);
@@ -91,19 +91,37 @@ function update_newton!(newt::class_homogeneous_newton, vars::class_variables, s
   end
 end
 
-function update_delta_mod!(newt::class_homogeneous_newton, vars::class_variables)
-		newt.delta_mod = [newt.delta * ones(n(vars)); newt.delta * norm(x_scaled(vars),2)^2]
+function update_delta_mod!(newt::class_homogeneous_newton, vars::class_variables, settings::class_settings)
+
+		# choose modification to diagonally dominant
+		mod = zeros(n(vars)+1)
+		for i = 1:(n(vars)+1)
+			#mod[i] = max(sum(abs(newt.K[i,:])) - abs(newt.K[i,i]) - newt.K[i,i] + 1.0, 0.0)
+			mod[i] = max(sum(abs(newt.K[i,(1:n(vars)+1)])) - abs(newt.K[i,i]) - newt.K[i,i] + 1e-8, 0.0)
+		end
+
+		dd_mod = [newt.delta * mod; -settings.diagonal_modification*ones(m(vars))]
+		simple_mod = [newt.delta * ones(n(vars)); newt.delta * norm(x_scaled(vars),2)^2; -settings.diagonal_modification*ones(m(vars))]
+
+		#@show simple_mod[n(vars)+1], dd_mod[n(vars)+1]
+
+		if true
+				newt.delta_mod = dd_mod
+		else
+				# simple delta choice that only affects
+				newt.delta_mod = simple_mod
+		end
 end
 
 function update_newton_diag!(newt::class_homogeneous_newton, vars::class_variables, settings::class_settings)
-		update_delta_mod!(newt, vars)
+		update_delta_mod!(newt, vars,settings)
 
     H = newt.nlp_vals.val_hesslag_prod;
     D_x_diag = diag(H) + s(vars) ./ x(vars) +	newt.delta_mod[1:n(vars)]
 
     val_x_scaled = x_scaled(vars);
     D_g = val_x_scaled' * H * val_x_scaled + kappa(vars) / tau(vars) + newt.delta_mod[n(vars)+1]
-    diag_mod = [ D_x_diag; D_g; -settings.diagonal_modification*ones(m(vars))];
+    diag_mod = [ D_x_diag; D_g; newt.delta_mod[(n(vars)+2):(n(vars)+1+m(vars))]];
 
     for i = 1:size(newt.K,1)
         newt.K[i,i] = diag_mod[i];
@@ -118,7 +136,7 @@ function update_newton_diag_affine!(newt::class_homogeneous_newton, vars::class_
 
     val_x_scaled = x_scaled(vars);
     D_g = val_x_scaled' * H * val_x_scaled + kappa(vars) / tau(vars) + newt.delta / tau(vars)^2 #+ newt.delta * norm(val_x_scaled,2)^2;
-    diag_mod = [ D_x_diag; D_g; -settings.diagonal_modification*ones(m(vars))];
+    diag_mod = [ D_x_diag; D_g; -settings.diagonal_modification * ones(m(vars))];
 
     for i = 1:size(newt.K,1)
         newt.K[i,i] = diag_mod[i];
@@ -176,38 +194,12 @@ function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_v
 				(1.0 - theta.dual) * res.r_G + tk / tau(vars);
 				(1.0 - theta.primal) * res.r_P ];
 
-				#linear_system_solver.ls_solve!(rhs,sol);
-        #start_advanced_timer("Factor2");
-				#fac = lufact(newt.K_true)
-				#pause_advanced_timer("Factor2");
-
         @assert(newt.W_updated == true)
         start_advanced_timer("Solve");
-        #sol = (newt.K + U * newt.W.V) \ rhs;
-
-        tol = 1e-6
-        sol = false;
 
 				sol = ls_solve(newt.W, rhs);
-				#err = norm(evaluate(newt.W, sol) - rhs,1)/norm(rhs,1);
 
-        #try
-        #  @assert(err < tol)
-        #catch e
-				#		@show err
-        #    warn("numerical instability using Woodbury, using direct factorization instead of woodbury.")
-        #    sol = ls_solve_direct(newt.W, rhs)
-        #    err = norm(evaluate(newt.W, sol) - rhs, 1)/norm(rhs,1);
-        #    if (err > tol)
-        #        warn("numerical stability using direct factorization, computation skipped")
-        #        return false
-        #    end
-        #end
         pause_advanced_timer("Solve");
-
-        #println(full(newt.K_true))
-        #abs_error = norm(newt.K_true * sol - rhs,1)
-        #println("absolute_error=",abs_error)
 
         # update direction from linear system solution
 				dir = newt.direction;
@@ -217,6 +209,9 @@ function compute_newton_direction!(newt::class_homogeneous_newton, vars::class_v
 
 				s(dir,(xs - s(vars) .* x(dir)) ./ x(vars) );
 				kappa(dir, (tk - kappa(vars) * tau(dir)) / tau(vars) );
+
+				tmp = [x(dir); tau(dir); zeros(m(dir))]
+				#@show tmp' * newt.K * tmp #+ norm(y(dir),2)*1e-8
 
 				# is this direction valid ?
 				check_for_wrong_vals(dir);

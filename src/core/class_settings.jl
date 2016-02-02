@@ -30,7 +30,7 @@ type class_settings
 		this = new();
 
 		# termination criteron
-		this.max_it = 300;
+		this.max_it = 600;
 
 		this.kappa_tau_tol = 1e-8
 		this.gap_tol = 1e-8;
@@ -53,7 +53,7 @@ type class_settings
 		# delta parameters
 		this.delta_min = 1e-8;
 		this.delta_max = 1e20;
-		this.delta_start = 1e-4;
+		this.delta_start = 1.1;
 		this.delta_increase = 8;
 		this.delta_decrease = 1.0/3.0;
 

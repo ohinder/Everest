@@ -38,12 +38,20 @@ end
 
 function ls_solve(W::woodbury_identity, rhs::Array{Float64,1})
   try
-    my_temp = ls_solve(W.factored_A, rhs)
-    sol = (my_temp - W.invA_U * (W.factored_capacitance_matrix \ (W.V * my_temp)))
+    rhs_err = rhs
+    sol = zeros(length(rhs))
+    for i = 1:1
+        # iterative refinement
+        my_temp = ls_solve(W.factored_A, rhs_err)
+        Δd = (my_temp - W.invA_U * (W.factored_capacitance_matrix \ (W.V * my_temp)))
+        sol = sol + Δd[:]
+        rhs_err = rhs - evaluate(W,sol)
+        #@show i, norm(rhs_err,1)
+    end
 
     # catch errors
-    tol = 1e-6;
-    err = rel_error(W, rhs, sol[:]) # why is this rel error?
+    tol = 1e-10;
+    err = rel_error(W, rhs, sol) # why is this rel error?
     if err > tol
         warn("numerical instability using Woodbury, using direct factorization instead of woodbury.")
         sol = ls_solve_direct(W, rhs)

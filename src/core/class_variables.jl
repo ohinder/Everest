@@ -94,6 +94,10 @@ function m(vars::class_variables)
     return length(vars._y_ind)
 end
 
+function mu(vars::class_variables)
+    return mean([x(vars) .* s(vars); tau(vars) * kappa(vars)])
+end
+
 # point = point + alpha * direction
 function move!(vars::class_variables, alpha::Float64, direction::class_variables)
     try
@@ -168,4 +172,3 @@ function check_for_wrong_vals(vars::class_variables)
           throw(e)
       end
 end
-

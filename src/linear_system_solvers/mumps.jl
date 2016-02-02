@@ -44,8 +44,11 @@ function finalize!(solver::linear_solver_MUMPS)
 end
 
 function ls_factor!(solver::linear_solver_MUMPS, n::Int64, m::Int64)
+		start_advanced_timer("MUMPS/associate_matrix")
     MUMPS.associate_matrix(solver._factor, solver._SparseMatrix);
-    MUMPS.factorize(solver._factor);
+		pause_advanced_timer("MUMPS/associate_matrix")
+		
+		MUMPS.factorize(solver._factor);
 
 		return solver._factor.infog[12] == m; # inertia
 end

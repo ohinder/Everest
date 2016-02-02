@@ -59,55 +59,6 @@ facts("core") do
       vars2 = class_variables(3,3);
       @fact_throws ErrorException validate_dimensions(qp, vars2)
   end
-
-  context("nlp") do
-      # - x - y
-
-      a = sparse([-2.0, -2.0, 0.0])
-      b = 0.0
-      P = spdiagm([0.0, 0.0, 0.0])
-      obj = nl_quad(a,P,b)
-
-      # x^2 + y^2 + s - 1
-      a = sparse([0.0, 0.0, -1.0])
-      P = spdiagm([2.0, 2.0, 0.0])
-      b = -4.0 #-4.0
-      constr1 = nl_quad(a,P,b)
-
-      nlp = class_nlp(3, obj, [constr1])
-
-      x_val = [1.0, 1.0, 0.0];
-
-      nlp.obj.value(x_val)
-      nlp.obj.gradient(x_val)
-      nlp.obj.hessian(x_val)
-
-      nlp.constraints[1].value(x_val)
-      nlp.constraints[1].gradient(x_val)
-      nlp.constraints[1].hessian(x_val)
-
-      y_val = [1.0]
-      internal_eval_c(nlp, x_val)
-      internal_eval_a(nlp, x_val)
-      internal_eval_jac_a(nlp, x_val)
-      internal_eval_hesslag_prod(nlp, x_val, y_val)
-      internal_eval_gradlag(nlp, x_val, y_val)
-      internal_eval_gradc(nlp, x_val)
-      internal_eval_b(nlp, x_val)
-
-      vars = class_variables(3,1);
-      status, vars = homogeneous_algorithm(nlp, vars, settings)
-      @show x_scaled(vars)
-
-      @show internal_eval_hesslag_prod(nlp, x(vars), y(vars))
-
-      @fact status --> :locally_optimal
-      @fact norm(x_scaled(vars) - [2.0,2.0,0.0]) --> less_than(1e-6)
-      @fact tau(vars) --> greater_than(0.1)
-      @fact 0.0 --> less_than(kappa(vars))
-      @fact kappa(vars) --> less_than(1e-6)
-  end
-
 end
 
 
@@ -174,3 +125,5 @@ begin
 
 
 end
+
+include("sample_nlps.jl")

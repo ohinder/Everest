@@ -1,10 +1,11 @@
 type class_nl_function
+    n::Int64
     value::Function
     gradient::Function
     hessian::Function
 
-    function class_nl_function(val::Function,grad::Function,hess::Function)
-        return new(val,grad,hess)
+    function class_nl_function(num_var::Int64,val::Function,grad::Function,hess::Function)
+        return new(num_var,val,grad,hess)
     end
 end
 
